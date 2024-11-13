@@ -1,6 +1,5 @@
 package kaptainwutax.tungsten.path.blockSpaceSearchAssist;
 
-import baritone.api.utils.SettingsUtil;
 import net.minecraft.util.math.BlockPos;
 
 public class Goal {
@@ -46,9 +45,9 @@ public class Goal {
     public String toString() {
         return String.format(
                 "GoalBlock{x=%s,y=%s,z=%s}",
-                SettingsUtil.maybeCensor(x),
-                SettingsUtil.maybeCensor(y),
-                SettingsUtil.maybeCensor(z)
+                Integer.toString(x),
+                Integer.toString(y),
+                Integer.toString(z)
         );
     }
 

@@ -7,9 +7,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import baritone.api.pathing.movement.ActionCosts;
 import kaptainwutax.tungsten.TungstenMod;
-import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
+import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
 import kaptainwutax.tungsten.render.Line;
@@ -79,7 +78,7 @@ public class BlockSpacePathFinder {
 			if(TungstenMod.pauseKeyBinding.isPressed()) break;
 			if(next.getPos().squaredDistanceTo(target) <= 0.4D && !failing && next.wasCleared(world, next.previous.getBlockPos(), next.getBlockPos())) {
 				TungstenMod.RENDERERS.clear();
-				TungstenMod.TEST.clear();
+//				TungstenMod.TEST.clear();
 				BlockNode n = next;
 				List<BlockNode> path = new ArrayList<>();
 
@@ -118,19 +117,19 @@ public class BlockSpacePathFinder {
                 
                 failing = updateBestSoFar(child, bestHeuristicSoFar, target);
                 TungstenMod.RENDERERS.add(new Cuboid(child.getPos(), new Vec3d(1.0D, 1.0D, 1.0D), Color.BLUE));
-//				try {
-//                Thread.sleep(50);
-//            } catch (InterruptedException ignored) {}
 			}
+//			try {
+//                Thread.sleep(150);
+//            } catch (InterruptedException ignored) {}
 		}
-		TungstenMod.TEST.clear();
+//		TungstenMod.TEST.clear();
 		if (openSet.isEmpty()) player.sendMessage(Text.literal("Ran out of nodes"));
 		return null;
 	}
 	
 	private static double computeHeuristic(Vec3d position, Vec3d target) {
 	    double dx = position.x - target.x;
-	    double dy = (position.y - target.y) * 8;
+	    double dy = (position.y - target.y)*3;
 	    double dz = position.z - target.z;
 	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 30;
 	}

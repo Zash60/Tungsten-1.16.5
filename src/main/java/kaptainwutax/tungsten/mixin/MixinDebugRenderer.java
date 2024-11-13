@@ -20,34 +20,37 @@ public class MixinDebugRenderer {
     @Inject(method = "render", at = @At("RETURN"))
     public void render(MatrixStack matrices, VertexConsumerProvider.Immediate vertexConsumers, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
         RenderSystem.disableDepthTest();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        RenderSystem.disableTexture();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
         RenderSystem.disableBlend();
-
+//
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
-
+        BufferBuilder builder;
+//
         RenderSystem.lineWidth(2.0F);
         
-        buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+        if (TungstenMod.COLLISION_BOX != null) {
+        	builder = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+        	TungstenMod.COLLISION_BOX.render(builder);
+            BufferRenderer.drawWithGlobalProgram(builder.end());
+        }
+
+        builder = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
         Cuboid goal = new Cuboid(TungstenMod.TARGET.subtract(0.5D, 0D, 0.5D), new Vec3d(1.0D, 2.0D, 1.0D), Color.GREEN);
-        goal.render();
-        tessellator.draw();
-
+        goal.render(builder);
+        BufferRenderer.drawWithGlobalProgram(builder.end());
+//
         TungstenMod.RENDERERS.forEach(r -> {
-            buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
-            r.render();
-            tessellator.draw();
+        	BufferBuilder buildera = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+            r.render(buildera);
+            BufferRenderer.drawWithGlobalProgram(buildera.end());
         });
-        
+//        
         TungstenMod.TEST.forEach(r -> {
-            buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
-            r.render();
-            tessellator.draw();
+        	BufferBuilder buildera = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+            r.render(buildera);
+            BufferRenderer.drawWithGlobalProgram(buildera.end());
         });
-
         RenderSystem.enableBlend();
-        RenderSystem.enableTexture();
     }
 
 }

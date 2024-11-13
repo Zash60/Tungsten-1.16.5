@@ -4,12 +4,17 @@ import com.mojang.authlib.GameProfile;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.path.PathFinder;
+import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder;
+import kaptainwutax.tungsten.render.Color;
+import kaptainwutax.tungsten.render.Cuboid;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.encryption.PlayerPublicKey;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,7 +29,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 	private Thread patfinderThread = null;
 
 	public MixinClientPlayerEntity(ClientWorld world, GameProfile profile, @Nullable PlayerPublicKey publicKey) {
-		super(world, profile, publicKey);
+		super(world, profile);
 	}
 
 	@Inject(method = "tick", at = @At("HEAD"))
@@ -35,14 +40,15 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
 		if(!this.getAbilities().flying) {
 			Agent.INSTANCE = Agent.of((ClientPlayerEntity)(Object)this);
-			Agent.INSTANCE.tick(this.world);
+			Agent.INSTANCE.tick(this.getWorld());
+			TungstenMod.COLLISION_BOX = new Cuboid(new Vec3d(Agent.INSTANCE.box.minX, Agent.INSTANCE.box.minY, Agent.INSTANCE.box.minZ), new Vec3d(Agent.INSTANCE.dimensions.width(), Agent.INSTANCE.dimensions.height(), Agent.INSTANCE.dimensions.width()), Agent.INSTANCE.collidedSoftly || Agent.INSTANCE.horizontalCollision || Agent.INSTANCE.verticalCollision ? Color.RED : Color.WHITE);
 		}
 
 		if(TungstenMod.runKeyBinding.isPressed() && !PathFinder.active) {
-			PathFinder.find(this.world, TungstenMod.TARGET);
+			PathFinder.find(this.getWorld(), TungstenMod.TARGET);
 		}
 		if(TungstenMod.runBlockSearchKeyBinding.isPressed() && !PathFinder.active) {
-			PathFinder.find(world, TungstenMod.TARGET);
+			BlockSpacePathFinder.find(getWorld(), TungstenMod.TARGET);
 		}
 		if (TungstenMod.pauseKeyBinding.isPressed() && PathFinder.thread != null && PathFinder.thread.isAlive()) {
 			PathFinder.thread.interrupt();

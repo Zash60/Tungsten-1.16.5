@@ -23,6 +23,7 @@ public class PathExecutor {
 	}
 
 	public void setPath(List<Node> path) {
+    	this.allowedFlying = MinecraftClient.getInstance().player.getAbilities().allowFlying;
     	this.path = path;
     	this.tick = 0;
 	}
@@ -42,7 +43,7 @@ public class PathExecutor {
 		    options.jumpKey.setPressed(false);
 		    options.sneakKey.setPressed(false);
 		    options.sprintKey.setPressed(false);
-		    player.getAbilities().allowFlying = true;
+		    player.getAbilities().allowFlying = allowedFlying;
     		return;
     	}
     	if(this.tick == this.path.size()) {
@@ -56,12 +57,15 @@ public class PathExecutor {
 		    player.getAbilities().allowFlying = true;
 	    } else {
 		    Node node = this.path.get(this.tick);
-
 		    if(this.tick != 0) {
 			    this.path.get(this.tick - 1).agent.compare(player, true);
 		    }
 
 		    if(node.input != null) {
+			    player.prevYaw = player.getYaw();
+			    player.prevPitch = player.getPitch();
+			    player.setYaw(node.input.yaw);
+			    player.setPitch(node.input.pitch);
 			    if (player.isCreative()) player.stopFallFlying();
 			    options.forwardKey.setPressed(node.input.forward);
 			    options.backKey.setPressed(node.input.back);
@@ -70,10 +74,6 @@ public class PathExecutor {
 			    options.jumpKey.setPressed(node.input.jump);
 			    options.sneakKey.setPressed(node.input.sneak);
 			    options.sprintKey.setPressed(node.input.sprint);
-			    player.prevYaw = player.getYaw();
-			    player.prevPitch = player.getPitch();
-			    player.setYaw(node.input.yaw);
-			    player.setPitch(node.input.pitch);
 		    }
 	    }
 

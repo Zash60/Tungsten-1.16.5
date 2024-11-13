@@ -17,6 +17,7 @@ import kaptainwutax.tungsten.render.Cuboid;
 import kaptainwutax.tungsten.render.Line;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -117,7 +118,7 @@ public class PathFinder {
 //             } catch (InterruptedException ignored) {}
 			 
 			for(Node child : next.getChildren(world, target)) {
-				if (!child.agent.isSubmergedInWater && !child.agent.isClimbing(world) && shouldNodeBeSkiped(child, target, closed)) continue;
+//				if (!child.agent.isSubmergedInWater && !child.agent.isClimbing(world) && shouldNodeBeSkiped(child, target, closed)) continue;
 //				if(closed.contains(child.agent.getPos()))continue;
 				
 				// DUMB HEURISTIC CALC
@@ -136,7 +137,7 @@ public class PathFinder {
 				
 				// AStar? HEURISTIC CALC
 //				if (next.agent.getPos().distanceTo(child.agent.getPos()) < 0.2) continue;
-				updateNode(next, child, target, blockPath);
+				updateNode(world, next, child, target, blockPath);
 				
                 if (child.isOpen()) {
                     openSet.update(child);
@@ -161,7 +162,7 @@ public class PathFinder {
 	}
 	
 	private static boolean shouldNodeBeSkiped(Node n, Vec3d target, Set<Vec3d> closed, boolean addToClosed) {
-		if (n.agent.getPos().distanceTo(target) < 2.0 /*|| n.agent.isSubmergedInWater*/ /*|| n.agent.isClimbing(MinecraftClient.getInstance().world)*/) {
+		if (n.agent.getPos().distanceTo(target) < 1.0 /*|| n.agent.isSubmergedInWater*/ /*|| n.agent.isClimbing(MinecraftClient.getInstance().world)*/) {
 			if(closed.contains(new Vec3d(Math.round(n.agent.getPos().x*1000), Math.round(n.agent.getPos().y * 1000), Math.round(n.agent.getPos().z*1000)))) return true;
 			if (addToClosed) closed.add(new Vec3d(Math.round(n.agent.getPos().x*1000), Math.round(n.agent.getPos().y * 1000), Math.round(n.agent.getPos().z*1000)));
 		} else if(closed.contains(new Vec3d(Math.round(n.agent.getPos().x*10), Math.round(n.agent.getPos().y * 10), Math.round(n.agent.getPos().z*10)))) return true;
@@ -174,23 +175,23 @@ public class PathFinder {
 	    double dx = position.x - target.x;
 	    double dy = 0;
 	    if (target.y != Double.MIN_VALUE) {
-		    dy = (position.y - target.y)*8;
+		    dy = (position.y - target.y) * 1.8;//*16;
 		    if (!onGround || dy < 1.6 && dy > -1.6) dy = 0;
 	    }
 	    double dz = position.z - target.z;
-	    return (Math.sqrt(dx * dx + dy * dy + dz * dz));
+	    return (Math.sqrt(dx * dx + dy * dy + dz * dz) + ((NEXT_CLOSEST_BLOCKNODE_IDX - 1) * -20));
 	}
 	
-	private static void updateNode(Node current, Node child, Vec3d target, List<BlockNode> blockPath) {
+	private static void updateNode(WorldView world, Node current, Node child, Vec3d target, List<BlockNode> blockPath) {
 	    Vec3d childPos = child.agent.getPos();
 
 	    double collisionScore = 0;
-	    double tentativeCost = current.cost + 1 + (child.agent.isSubmergedInWater ? -50^-20 : 0); // Assuming uniform cost for each step
+	    double tentativeCost = current.cost + 1; // Assuming uniform cost for each step
 	    if (child.agent.horizontalCollision) {
 	        collisionScore += 25 + (Math.abs(current.agent.velZ - child.agent.velZ) + Math.abs(current.agent.velX - child.agent.velX)) * 120;
 	    }
-	    if (child.agent.isSubmergedInWater) {
-	    	collisionScore *= 20000;
+	    if (child.agent.touchingWater) {
+	    	collisionScore = 20000^20;
 	    }
 	    if (child.agent.isClimbing(MinecraftClient.getInstance().world)) {
 	    	collisionScore *= 20000;
@@ -199,16 +200,19 @@ public class PathFinder {
 	    	collisionScore -= 20000;
 	    }
 
-	    double estimatedCostToGoal = computeHeuristic(childPos, child.agent.onGround, target) + collisionScore;
+	    double estimatedCostToGoal = /*computeHeuristic(childPos, child.agent.onGround, target) - 200 +*/ collisionScore;
 	    if (blockPath != null) {
-	    	int closestPosIDX = findClosestPositionIDX(new BlockPos(child.agent.blockX, child.agent.blockY, child.agent.blockZ), blockPath);
+	    	int closestPosIDX = findClosestPositionIDX(world, new BlockPos(child.agent.blockX, child.agent.blockY, child.agent.blockZ), blockPath);
 	    	BlockNode closestPos = blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX);
-	    	if (child.agent.onGround && /*closestPosIDX+1 > NEXT_CLOSEST_BLOCKNODE_IDX &&*/ closestPosIDX +1 < blockPath.size()) {
-	    		NEXT_CLOSEST_BLOCKNODE_IDX = closestPosIDX+1;
-		    	closestPos = blockPath.get(closestPosIDX+1);
-	    	}
-	    	    	
-	    	estimatedCostToGoal +=  computeHeuristic(childPos, true, new Vec3d(closestPos.x + 0.5, closestPos.y, closestPos.z + 0.5)) * 60.5 - closestPosIDX * 200;
+//	    	System.out.println(closestPosIDX);
+//	    	System.out.println(NEXT_CLOSEST_BLOCKNODE_IDX);
+	    	if (closestPosIDX+1 - NEXT_CLOSEST_BLOCKNODE_IDX < 2) {
+		    	if (child.agent.onGround && closestPosIDX+1 > NEXT_CLOSEST_BLOCKNODE_IDX && closestPosIDX +1 < blockPath.size()) {
+		    		NEXT_CLOSEST_BLOCKNODE_IDX = closestPosIDX+1;
+			    	closestPos = blockPath.get(closestPosIDX+1);
+		    	}
+	    	}	    	    	
+	    	estimatedCostToGoal +=  computeHeuristic(childPos, child.agent.onGround || child.agent.slimeBounce, new Vec3d(closestPos.x + 0.5, closestPos.y, closestPos.z + 0.5)) * 600.5;
 	    }
 
 	    child.parent = current;
@@ -217,25 +221,27 @@ public class PathFinder {
 	    child.combinedCost = tentativeCost + estimatedCostToGoal;
 	}
 	
-	private static BlockNode findClosestPosition(BlockPos current, List<BlockNode> positions) {
-		return positions.get(findClosestPositionIDX(current, positions));
+	private static BlockNode findClosestPosition(WorldView world, BlockPos current, List<BlockNode> positions) {
+		return positions.get(findClosestPositionIDX(world, current, positions));
 	}
-	private static int findClosestPositionIDX(BlockPos current, List<BlockNode> positions) {
+	private static int findClosestPositionIDX(WorldView world, BlockPos current, List<BlockNode> positions) {
         if (positions == null || positions.isEmpty()) {
             throw new IllegalArgumentException("The list of positions must not be null or empty.");
         }
 
         int closestIDX = 1;
         BlockNode closest = positions.get(closestIDX);
-        double minDistance = current.getSquaredDistance(closest.getPos());
+        double minDistance = current.getSquaredDistance(closest.getPos())/* + Math.abs(closest.y - current.getY()) * 160*/;
         
         for (int i = 1; i < positions.size(); i++) {
         	BlockNode position = positions.get(i);
 //			if (i % 5 != 0) {
 //        		continue;
 //        	}
-            double distance = current.getSquaredDistance(position.getPos());
-            if (distance < minDistance) {
+            double distance = current.getSquaredDistance(position.getPos())/* + Math.abs(position.y - current.getY()) * 160*/;
+            if (distance < minDistance 
+            		&& position.wasCleared(world, position.getBlockPos(), current)
+            		) {
                 minDistance = distance;
                 closest = position;
                 closestIDX = i;
@@ -309,6 +315,7 @@ public class PathFinder {
 			i++;
 			n = n.parent;
 		}
+		System.out.println(i);
 	}
 	
 }

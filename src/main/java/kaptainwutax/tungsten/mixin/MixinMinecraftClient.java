@@ -1,15 +1,16 @@
 package kaptainwutax.tungsten.mixin;
 
-import kaptainwutax.tungsten.TungstenMod;
-import kaptainwutax.tungsten.world.VoxelWorld;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.world.VoxelWorld;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
 
 @Mixin(MinecraftClient.class)
 public class MixinMinecraftClient {
@@ -26,5 +27,5 @@ public class MixinMinecraftClient {
 			TungstenMod.WORLD = new VoxelWorld(this.world);
 		}
 	}
-
+	
 }

@@ -3,26 +3,30 @@ package kaptainwutax.tungsten.path.blockSpaceSearchAssist;
 import java.util.ArrayList;
 import java.util.List;
 
-import baritone.api.pathing.movement.ActionCosts;
-import baritone.api.utils.BetterBlockPos;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
+import kaptainwutax.tungsten.world.BetterBlockPos;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CarpetBlock;
-import net.minecraft.block.FenceBlock;
+import net.minecraft.block.DaylightDetectorBlock;
+import net.minecraft.block.LadderBlock;
+import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.LilyPadBlock;
+import net.minecraft.block.SeaPickleBlock;
 import net.minecraft.block.SlabBlock;
+import net.minecraft.block.SlimeBlock;
 import net.minecraft.block.StairsBlock;
 import net.minecraft.block.enums.SlabType;
-import net.minecraft.fluid.LavaFluid;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.ai.pathing.PathNode;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.WorldView;
 
 public class BlockNode {
@@ -56,6 +60,8 @@ public class BlockNode {
      * Mutable and changed by PathFinder
      */
     public BlockNode previous;
+    
+    private boolean wasOnSlime;
 
     /**
      * Where is this node in the array flattenization of the binary heap? Needed for decrease-key operations.
@@ -73,6 +79,7 @@ public class BlockNode {
         this.x = pos.getX();
         this.y = pos.getY();
         this.z = pos.getZ();
+        this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(pos.down()).getBlock() instanceof SlimeBlock;
     }
     
     public BlockNode(int x, int y, int z, Goal goal) {
@@ -86,11 +93,13 @@ public class BlockNode {
         this.x = x;
         this.y = y;
         this.z = z;
+        this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y-1, z)).getBlock() instanceof SlimeBlock;
     }
     
     public BlockNode(int x, int y, int z, Goal goal, BlockNode parent, double cost) {
         this.previous = parent;
-        this.cost = ActionCosts.COST_INF;
+        this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y-1, z)).getBlock() instanceof SlimeBlock;
+        this.cost = parent != null ? 0 : ActionCosts.COST_INF;
         this.estimatedCostToGoal = goal.heuristic(x, y, z);
         if (Double.isNaN(estimatedCostToGoal)) {
             throw new IllegalStateException(goal + " calculated implausible heuristic");
@@ -143,14 +152,33 @@ public class BlockNode {
 		
 		List<BlockNode> nodes = getNodesIn2DCircule(6, this, goal);
 		nodes.removeIf((child) -> {
-			if(world.getBlockState(child.getBlockPos().down()).isAir()) return true;
+			double heightDiff = child.y - y;
+			System.out.println(heightDiff);
+			if ((world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.WATER) 
+					|| world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.FLOWING_WATER))
+					&& wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
+//			if(previous != null && previous.y-y < 1 && wasOnSlime || !wasOnSlime && child.y - y > 1) return true;
+			if (!wasOnSlime && heightDiff > 0 && getPos().distanceTo(child.getPos()) >= 5) return true;
+			if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
+			if (world.getBlockState(child.getBlockPos()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
+			if(world.getBlockState(child.getBlockPos().down()).isAir()
+					&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock)) return true;
+			if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
+					&& world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) return true;
+			if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SeaPickleBlock) return true;
+			if (world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
+					&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) {
+				if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos())) return true;
+			} else 
+				if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos().down()) 
+					&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock)) return true;
 			if(world.getBlockState(child.getBlockPos()).isOf(Blocks.LAVA)) return true;
 //			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock) return true;
-			if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
-					&& world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) return true;
+//			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock) return false;
 			if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LilyPadBlock) return true;
 			if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof CarpetBlock) return true;
-			if(child.y - y > 1) return true;
+			if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof DaylightDetectorBlock) return true;
+			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof StairsBlock) return true;
 			
 			VoxelShape blockShape = world.getBlockState(child.getBlockPos().down()).getCollisionShape(world, child.getBlockPos().down());
 			VoxelShape previousBlockShape = world.getBlockState(getBlockPos().down()).getCollisionShape(world, getBlockPos().down());
@@ -160,25 +188,61 @@ public class BlockNode {
 					&& !previousBlockShape.isEmpty()
 					&& previousBlockShape.getBoundingBox().maxY < 1.3
 					&& previousBlockShape.getBoundingBox().maxY > 0.5
-					&& y - child.y < 1
-					&& getPos().distanceTo(child.getPos()) > 4) return true;
+					&& (heightDiff > 0
+					&& getPos().distanceTo(child.getPos()) > 4 )) return true;
 			
 			
-			if (getPos().distanceTo(child.getPos()) > 5 && y - child.y < 3) return true;
-			if (!wasCleared(world, getBlockPos(), child.getBlockPos())) {
-	            return true;
-	        }
 			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
 					&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM
+					&& heightDiff > 0
+					&& (world.getBlockState(getBlockPos().down()).getBlock() instanceof SlabBlock
+					&& world.getBlockState(getBlockPos().down()).get(Properties.SLAB_TYPE) != SlabType.BOTTOM
+					|| world.getBlockState(getBlockPos()).getBlock() instanceof SlabBlock
+					&& world.getBlockState(getBlockPos()).get(Properties.SLAB_TYPE) != SlabType.BOTTOM
+					)
+					) return true;
+
+
+			if(!blockShape.isEmpty() && 
+					blockShape.getBoundingBox().maxY > 1.3
 					&& y - child.y < 0
 					&& !(world.getBlockState(getBlockPos().down()).getBlock() instanceof SlabBlock
 					&& world.getBlockState(getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
+					&& !previousBlockShape.isEmpty() && 
+					previousBlockShape.getBoundingBox().maxY < 1.3
 					) return true;
+			if((world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
+					&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM
+					||  !blockShape.isEmpty() && 
+					blockShape.getBoundingBox().maxY > 1.3)
+					&& !(world.getBlockState(getBlockPos()).getBlock() instanceof SlabBlock
+							&& world.getBlockState(getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
+					&& y - child.y < 0
+					&& !previousBlockShape.isEmpty() && 
+					previousBlockShape.getBoundingBox().maxY < 1.3
+					) return true;
+
 			
-			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof StairsBlock) return true;
-			
-			return !hasBiggerCollisionShapeThanAbove(world, child.getBlockPos().down());
+			if (!wasCleared(world, getBlockPos(), child.getBlockPos())) {
+	            return true;
+	        }
+
+			return false;
 		});
+		
+//		for (Iterator iterator = nodes.iterator(); iterator.hasNext();) {
+//			BlockNode blockNode = (BlockNode) iterator.next();
+//
+//			TungstenMod.TEST.add(new Cuboid(new Vec3d(blockNode.x, blockNode.y, blockNode.z), new Vec3d(1.0D, 1.0D, 1.0D), blockNode.wasOnSlime ? Color.GREEN : Color.WHITE));
+//		}
+//		
+//		if (wasOnSlime && previous != null && previous.y - y > 0
+//				|| previous != null && previous.y - y < 0) {
+//				try {
+//					Thread.sleep(2500);
+//				} catch (InterruptedException ignored) {}
+//		}
+//		TungstenMod.TEST.clear();
 		
 		return nodes;
 		
@@ -195,84 +259,84 @@ public class BlockNode {
 	    
 	    int thickness = 1;
 		TungstenMod.TEST.clear();
-		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
-		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.BLUE));
-	
-	    // Swap coordinates if necessary to make sure x1 <= x2, y1 <= y2, and z1 <= z2
-//	    if (x1 > x2) {
-//	        int temp = x1;
-//	        x1 = x2;
-//	        x2 = temp;
-//	    }
-//	    if (y1 > y2) {
-//	        int temp = y1;
-//	        y1 = y2;
-//	        y2 = temp;
-//	    }
-//	    if (z1 > z2) {
-//	        int temp = z1;
-//	        z1 = z2;
-//	        z2 = temp;
-//	    }
-	
-	    int dx = Math.abs(x2 - x1);
-        int dz = Math.abs(z2 - z1);
+//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
+//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.BLUE));
 
-        int sx = x1 < x2 ? 1 : -1;
-        int sz = z1 < z2 ? 1 : -1;
-        BlockPos.Mutable currPos = new BlockPos.Mutable();
-        int err = dx - dz;
-        while (true) {
+		BlockPos.Mutable currPos = new BlockPos.Mutable();
+		int x = x1;
+        int y = y1;
+        int z = z1;
 
-        	for (int y = 1; y < 3; y++) {
-        		
-//        		for (int i = -thickness / 2; i <= thickness / 2; i++) {
-//        			int ax = x1;
-//        			int az = z1;
-//                    if (dx > dz) {
-//                        az += i;
-//                    } else {
-//                        ax += i;
-//                    }
+        while (x != x2 || y != y2 || z != z2) {
+            
+            if (z < z2) {
+                z++;
+            } else if (z > z2) {
+                z--;
+            }
 
-        		currPos.set(x1, y1 + y, z1);
-	    			if (
-	    					world.getBlockState(currPos).isFullCube(world, currPos) || 
-	    					hasBiggerCollisionShapeThanAbove(world, currPos) 
-	    					&& !(world.getBlockState(currPos).getBlock() instanceof SlabBlock)
-	    					) {
-	    				TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1 + y, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-//	        			try {
-//	        				Thread.sleep(50);
-//	        			} catch (InterruptedException ignored) {}
-//	    			if (world.isAir(new BlockPos(ax, y1 + y, az))) {
-	        			
-	    				return false;
-	    			} else {
-	    				TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1 + y, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-	    			}
-//                }
+            currPos.set(x, y, z);
+            if (isObscured(world, currPos)) {
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+				return false;
+			} else {
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			}
+//        }
+            if (x < x2) {
+                x++;
+            } else if (x > x2) {
+                x--;
+            }
+            currPos.set(x, y, z);
+
+            if (isObscured(world, currPos)) {
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+				return false;
+			} else {
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			}
 
-            if (x1 == x2 && z1 == z2) {
-                break;
+            if (y < y2) {
+                y++;
+            } else if (y > y2) {
+                y--;
             }
-
-            int e2 = 2 * err;
-
-            if (e2 > -dz) {
-                err -= dz;
-                x1 += sx;
-            }
-
-            if (e2 < dx) {
-                err += dx;
-                z1 += sz;
-            }
+            currPos.set(x, y, z);
+            
+            if (isObscured(world, currPos)) {
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+				return false;
+			} else {
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			}
         }
+//		try {
+//		Thread.sleep(250);
+//	} catch (InterruptedException ignored) {}
 
 		return true;
 	}
+    
+    private static boolean isObscured(WorldView world, BlockPos pos) {
+    	return ((world.getBlockState(pos).isFullCube(world, pos)
+    			|| world.getBlockState(pos).getBlock() instanceof LeavesBlock) && !hasBiggerCollisionShapeThanAbove(world, pos) || 
+				hasBiggerCollisionShapeThanAbove(world, pos) ) 
+		&& !(world.getBlockState(pos).getBlock() instanceof SlabBlock)
+		&& !(world.getBlockState(pos).getBlock() instanceof CarpetBlock)
+		&& !(world.getBlockState(pos).getBlock() instanceof DaylightDetectorBlock)
+		|| (world.getBlockState(pos.up()).isFullCube(world, pos.up())
+				|| (world.getBlockState(pos.up()).getBlock() instanceof LeavesBlock)) 
+		&& !(world.getBlockState(pos.up()).getBlock() instanceof SlabBlock)
+		&& !(world.getBlockState(pos.up()).getBlock() instanceof CarpetBlock)
+		&& !(world.getBlockState(pos.up()).getBlock() instanceof DaylightDetectorBlock);
+    }
     
     public static boolean hasBiggerCollisionShapeThanAbove(WorldView world, BlockPos pos) {
         // Get the block states of the block at pos and the two blocks above it
@@ -303,26 +367,66 @@ public class BlockNode {
     
     private List<BlockNode> getNodesIn2DCircule(int d, BlockNode parent, Goal goal) {
     	List<BlockNode> nodes = new ArrayList<>();
-    	for (int id = 1; id <= d; id++) {
-	        int px = id;
-	        int pz = 0;
-	        int dx = -1, dz = 1;
-	        int n = id * 4;
-	        for( int i = 0; i < n; i++ ) {
-	            if( px == id && dx > 0 ) dx = -1;
-	            else if( px == -id && dx < 0 ) dx = 1;
-	            if( pz == id && dz > 0 ) dz = -1;
-	            else if( pz == -id && dz < 0 ) dz = 1;
-	            px += dx;
-	            pz += dz;
-	            for( int py = -3; py < 3; py++ ) {
-		            BlockNode newNode = new BlockNode(this.x + px + (py < 0 ? py : 0), this.y + py, this.z + pz + (py < 0 ? py : 0), goal, this, ActionCosts.WALK_ONE_BLOCK_COST);
+//        for( int py = -3; py < 3; py++ ) {
+//	    	for (int id = 1; id <= (py < 0 ? d+(py*-1) : d); id++) {
+//		        int px = id;
+//		        int pz = 0;
+//		        int dx = -1, dz = 1;
+//		        int n = id * 4;
+//    	        for( int i = 0; i < n; i++ ) {
+//		            if( px == id && dx > 0 ) dx = -1;
+//		            else if( px == -id && dx < 0 ) dx = 1;
+//		            if( pz == id && dz > 0 ) dz = -1;
+//		            else if( pz == -id && dz < 0 ) dz = 1;
+//		            px += dx;
+//		            pz += dz;
+//		            BlockNode newNode = new BlockNode(this.x + px, this.y + py, this.z + pz, goal, this, ActionCosts.WALK_ONE_BLOCK_COST);
+//		            nodes.add(newNode);
+//	            }
+//	        }
+//		}
+		double g = 32.656;  // Acceleration due to gravity in m/s^2
+		double v_sprint = 5.8;  // Sprinting speed in m/s 5.8 based on meteor player.speed var
+		double yMax = (parent.wasOnSlime && parent.previous != null && parent.previous.y - parent.y != 0 ? getSlimeBounceHeight(parent.previous.y - parent.y)-0.5 :  2);
+		if (yMax != 2.0)System.out.println(yMax);
+		int distanceWanted = d;
+		for( int py = -14; py < yMax; py++ ) {
+		
+			if (py < 0 && py < -5) {
+				double t = Math.sqrt((2 * py*-1) / g);
+				d = (int) Math.ceil(v_sprint * t);
+		//	    		if (py == -1)
+		//	    		System.out.println(d);
+			}
+			else
+				d = distanceWanted+1;
+			for (int id = 1; id <= d; id++) {
+		        int px = id;
+		        int pz = 0;
+		        int dx = -1, dz = 1;
+		        int n = id * 4;
+		        for( int i = 0; i < n; i++ ) {
+		            if( px == id && dx > 0 ) dx = -1;
+		            else if( px == -id && dx < 0 ) dx = 1;
+		            if( pz == id && dz > 0 ) dz = -1;
+		            else if( pz == -id && dz < 0 ) dz = 1;
+		            px += dx;
+		            pz += dz;
+//					TungstenMod.TEST.add(new Cuboid(new Vec3d(this.x + px, this.y + py, this.z + pz), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		            BlockNode newNode = new BlockNode(this.x + px, this.y + py, this.z + pz, goal, this, ActionCosts.WALK_ONE_BLOCK_COST);
 		            nodes.add(newNode);
-	            }
-	        }
+		        }
+		    }
 		}
-        
+//		try {
+//			Thread.sleep(250);
+//		} catch (InterruptedException ignored) {}
+//		TungstenMod.TEST.clear();
         return nodes;
+    }
+    
+    private double getSlimeBounceHeight(double startHeight) {
+    	return -0.0011 * Math.pow(startHeight, 2) + 0.43529 * startHeight + 1.7323;
     }
 
 }

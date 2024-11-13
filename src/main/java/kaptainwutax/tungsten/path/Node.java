@@ -45,23 +45,23 @@ public class Node {
 
 	public List<Node> getChildren(WorldView world, Vec3d target) {
 		Node n = this.parent;
-//		boolean mismatch = false;
-//		int i;
-//
-//
-//		for(i = 0; i < 4 && n != null; i++) {
-//			if(n.agent.blockX != this.agent.blockX || n.agent.blockY != this.agent.blockY || n.agent.blockZ != this.agent.blockZ) {
-//				mismatch = true;
-//				break;
-//			}
-//
-//			n = n.parent;
-//		}
-		if(n != null && n.agent.isInLava() || this.agent.isInLava()) return new ArrayList<>();
+		boolean mismatch = false;
+		int i;
 
-//		if(!mismatch && i == 5) {
-//			return new ArrayList<>();
-//		}
+
+		for(i = 0; i < 4 && n != null; i++) {
+			if(n.agent.blockX != this.agent.blockX || n.agent.blockY != this.agent.blockY || n.agent.blockZ != this.agent.blockZ) {
+				mismatch = true;
+				break;
+			}
+
+			n = n.parent;
+		}
+		if(!mismatch && i == 5) {
+			return new ArrayList<>();
+		}
+		if(n != null && n.agent.isInLava() || this.agent.isInLava() || this.agent.fallDistance > 4 && !this.agent.slimeBounce&& !this.agent.touchingWater) return new ArrayList<>();
+
 
 		if(this.agent.onGround || this.agent.touchingWater) {
 			List<Node> nodes = new ArrayList<>();
@@ -85,14 +85,37 @@ public class Node {
 
 														if (isMoving && sprint && jump && !sneak) addNodeCost -= 0.2;
 														if (sneak) addNodeCost += 2;
+														if (this.agent.isSubmergedInWater) {
+															for (float pitch = -90.0f; pitch < 90.0f; pitch += 45) {
+																Node newNode = new Node(this, world, new PathInput(forward, false, right, left, jump, sneak, sprint, pitch, yaw), new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
+																newNode.cost += newNode.agent.isSubmergedInWater || this.agent.touchingWater ? 50 : 0;
+																nodes.add(newNode);
+															}
+														} else {
+															Node newNode = new Node(this, world, new PathInput(forward, false, right, left, jump, sneak, sprint, agent.pitch, yaw), new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
+															newNode.cost += newNode.agent.isSubmergedInWater || this.agent.touchingWater ? 50 : 0;
+															
+//															if (jump) {
+//																Node newNode2 = new Node(newNode, world, new PathInput(true, false, false, false, false,
+//																		false, true, newNode.agent.pitch, newNode.agent.yaw), new Color(0, 255, 255), this.cost + 1);
+//																int i2 = 0;
+//																while (!newNode2.agent.onGround && i2 < 5) {
+//																	Node node2 = new Node(newNode2, world, new PathInput(true, false, false, false, false,
+//																			false, true, newNode2.agent.pitch, newNode2.agent.yaw), new Color(0, 255, 255), this.cost + 1);
+//																	i2++;
+//																	newNode2 = node2;
+//																}
+////																try {
+////																Thread.sleep(2);
+////															} catch (InterruptedException e1) {}
+//																nodes.add(newNode2);
+//															} else {
+																nodes.add(newNode);
+//															}
+														}
 														
-														Node newNode = new Node(this, world, new PathInput(forward, false, right, left, jump, sneak, sprint, agent.pitch, yaw), new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
 														
-														newNode.cost += newNode.agent.isSubmergedInWater ? 50 : 0;
-														
-														nodes.add(newNode);
 													} catch (java.util.ConcurrentModificationException e) {
-														// TODO: handle exception
 														try {
 															Thread.sleep(2);
 														} catch (InterruptedException e1) {}
@@ -141,12 +164,21 @@ public class Node {
 		} else {
 			List<Node> nodes = new ArrayList<Node>();
 			try {
+//				for (boolean forward : new boolean[]{true, false}) {
+//					for (boolean sprint : new boolean[]{true, false}) {
+//						for (boolean right : new boolean[]{false, true}) {
+//							for (float yaw = -180.0f; yaw < 180.0f; yaw += 45) {
+//								Node newNode = new Node(this, world, new PathInput(forward, false, right, false, false,
+//										false, sprint, this.agent.pitch, yaw), new Color(0, 255, 255), this.cost + 1);
+//								nodes.add(newNode);
+//							}
+//						}
+//					}
+//				}
 				Node newNode = new Node(this, world, new PathInput(true, false, false, false, false,
 						false, true, this.agent.pitch, this.agent.yaw), new Color(0, 255, 255), this.cost + 1);
-				newNode.cost += newNode.agent.isSubmergedInWater ? 50 : 0;
 				nodes.add(newNode);
 			} catch (java.util.ConcurrentModificationException e) {
-				// TODO: handle exception
 				try {
 					Thread.sleep(2);
 				} catch (InterruptedException e1) {}
