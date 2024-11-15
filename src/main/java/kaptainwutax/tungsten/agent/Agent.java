@@ -18,12 +18,14 @@ import it.unimi.dsi.fastutil.floats.FloatArrays;
 import it.unimi.dsi.fastutil.floats.FloatSet;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
+import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.mixin.AccessorEntity;
 import kaptainwutax.tungsten.mixin.AccessorLivingEntity;
 import kaptainwutax.tungsten.path.PathInput;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cube;
+import kaptainwutax.tungsten.render.Cuboid;
 import net.minecraft.block.AbstractFireBlock;
 import net.minecraft.block.AbstractPressurePlateBlock;
 import net.minecraft.block.BedBlock;
@@ -55,6 +57,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.HungerManager;
 import net.minecraft.fluid.Fluid;
@@ -454,9 +457,9 @@ public class Agent {
         this.velY = newY;
 
         if(this.sprinting) {
-            float g = this.yaw * ((float)Math.PI / 180);
-            this.velX += -MathHelper.sin(g) * 0.2F;
-            this.velZ +=  MathHelper.cos(g) * 0.2F;
+            float g = this.yaw * (float)(Math.PI / 180);
+            this.velX += (double)(-MathHelper.sin(g)) * 0.2;
+            this.velZ +=  (double)MathHelper.cos(g) * 0.2;
         }
     }
 
@@ -654,9 +657,9 @@ public class Agent {
     private float getMovementSpeed(float slipperiness) {
         if(this.onGround) {
             return this.movementSpeed * (0.21600002F / (slipperiness * slipperiness * slipperiness));
-        }
+        }	
 
-        return this.airStrafingSpeed;
+        return this.sprinting ? 0.025999999F : 0.02F;
     }
 
     private void applyClimbingSpeed(WorldView world) {
@@ -786,7 +789,7 @@ public class Agent {
         this.checkBlockCollision(world);
 
         float i = this.getVelocityMultiplier(world);
-        this.velX *= i; this.velZ *= i;
+//        this.velX *= i; this.velZ *= i;
 
 		/*
 		if (this.world.method_29556(this.getBoundingBox().contract(0.001))
@@ -1394,6 +1397,8 @@ public class Agent {
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
             if (TungstenMod.EXECUTOR.isRunning()) {
             	player.setPosition(this.posX, this.posY, this.posZ);
+            	
+            	TungstenMod.RENDERERS.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }
         }
 
@@ -1407,7 +1412,12 @@ public class Agent {
                 player.getVelocity().z == this.velZ ? "z" : this.velZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
             if (TungstenMod.EXECUTOR.isRunning()) {
-            	player.setVelocity(velX, velY, velZ);
+//            	TungstenMod.EXECUTOR.stop = true;
+//            	TungstenMod.PATHFINDER.stop = true;
+//            	player.setVelocity(0, 0, 0);
+            	player.setVelocity(this.velX, this.velY, this.velZ);
+            	
+            	TungstenMod.RENDERERS.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }
         }
 
@@ -1556,6 +1566,7 @@ public class Agent {
         agent.onGround = player.isOnGround();
         agent.sleeping = player.isSleeping();
         agent.sneaking = player.isSneaky();
+        agent.hunger = player.getHungerManager();
         agent.sprinting = player.isSprinting();
         agent.swimming = player.isSwimming();
         agent.fallFlying = player.isFallFlying();
@@ -1574,7 +1585,7 @@ public class Agent {
         agent.dolphinsGrace = player.hasStatusEffect(StatusEffects.DOLPHINS_GRACE) ? player.getStatusEffect(StatusEffects.DOLPHINS_GRACE).getAmplifier() : -1;
         agent.levitation = player.hasStatusEffect(StatusEffects.LEVITATION) ? player.getStatusEffect(StatusEffects.LEVITATION).getAmplifier() : -1;
         agent.movementSpeed = player.getMovementSpeed();
-        agent.airStrafingSpeed = 0;
+        agent.airStrafingSpeed = 0.06f;
         agent.jumpingCooldown = ((AccessorLivingEntity)player).getJumpingCooldown();
 
         //TODO: frame.ticksToNextAutojump
