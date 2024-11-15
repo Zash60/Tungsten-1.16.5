@@ -3,14 +3,14 @@
   "id": "tungsten",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Tungsten",
+  "description": "Pathfinder!",
   "authors": [
     "Me!"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/Hackerokuz/Tungsten",
+    "sources": "https://github.com/Hackerokuz/Tungsten"
   },
 
   "license": "CC0-1.0",
@@ -29,7 +29,8 @@
   "depends": {
     "fabricloader": ">=0.15.11",
     "minecraft": "1.21.1",
-    "java": ">=21"
+    "java": ">=21",
+    "fabric-key-binding-api-v1": "*"
   },
   "suggests": {
   }

@@ -4,17 +4,26 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList.Builder;
 
+import it.unimi.dsi.fastutil.floats.FloatArraySet;
+import it.unimi.dsi.fastutil.floats.FloatArrays;
+import it.unimi.dsi.fastutil.floats.FloatSet;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.mixin.AccessorEntity;
 import kaptainwutax.tungsten.mixin.AccessorLivingEntity;
 import kaptainwutax.tungsten.path.PathInput;
+import kaptainwutax.tungsten.render.Color;
+import kaptainwutax.tungsten.render.Cube;
 import net.minecraft.block.AbstractFireBlock;
 import net.minecraft.block.AbstractPressurePlateBlock;
 import net.minecraft.block.BedBlock;
@@ -42,6 +51,7 @@ import net.minecraft.block.TurtleEggBlock;
 import net.minecraft.block.WitherRoseBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.MovementType;
@@ -59,10 +69,13 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.border.WorldBorder;
 
 public class Agent {
 
@@ -475,8 +488,8 @@ public class Agent {
         }
 
         sideways *= speed; upward *= speed; forward *= speed;
-        float f = MathHelper.sin(this.yaw * 0.017453292F);
-        float g = MathHelper.cos(this.yaw * 0.017453292F);
+        float f = MathHelper.sin(yaw * (float) (Math.PI / 180.0));
+		float g = MathHelper.cos(yaw * (float) (Math.PI / 180.0));
 
         this.velX += sideways * (double)g - forward * (double)f;
         this.velY += upward;
@@ -839,24 +852,74 @@ public class Agent {
         boolean bl = movement.x != vec3d.x;
         boolean bl2 = movement.y != vec3d.y;
         boolean bl3 = movement.z != vec3d.z;
-        boolean bl5 = this.onGround || bl2 && movement.y < 0.0;
+		boolean bl4 = bl2 && movement.y < 0.0;
+        boolean bl5 = this.onGround || bl4;
 
         if(this.stepHeight > 0.0f && bl5 && (bl || bl3)) {
-            Vec3d vec3d2 = this.adjustMovementForCollisions(new Vec3d(movement.x, this.stepHeight, movement.z), box, world, list);
-            Vec3d vec3d3 = this.adjustMovementForCollisions(new Vec3d(0.0, this.stepHeight, 0.0), box.stretch(movement.x, 0.0, movement.z), world, list);
-            Vec3d vec3d4 = this.adjustMovementForCollisions(new Vec3d(movement.x, 0.0, movement.z), box.offset(vec3d3), world, list).add(vec3d3);
+//            Vec3d vec3d2 = this.adjustMovementForCollisions(new Vec3d(movement.x, this.stepHeight, movement.z), box, world, list);
+//            Vec3d vec3d3 = this.adjustMovementForCollisions(new Vec3d(0.0, this.stepHeight, 0.0), box.stretch(movement.x, 0.0, movement.z), world, list);
+//            Vec3d vec3d4 = this.adjustMovementForCollisions(new Vec3d(movement.x, 0.0, movement.z), box.offset(vec3d3), world, list).add(vec3d3);
+//
+//            if(vec3d3.y < (double)this.stepHeight && vec3d4.horizontalLengthSquared() > vec3d2.horizontalLengthSquared()) {
+//                vec3d2 = vec3d4;
+//            }
+//
+//            if(vec3d2.horizontalLengthSquared() > vec3d.horizontalLengthSquared()) {
+//                return vec3d2.add(this.adjustMovementForCollisions(new Vec3d(0.0, -vec3d2.y + movement.y, 0.0), box.offset(vec3d2), world, list));
+//            }
+        	Box box2 = bl4 ? box.offset(0.0, vec3d.y, 0.0) : box;
+			Box box3 = box2.stretch(movement.x, (double)this.stepHeight, movement.z);
+			if (!bl4) {
+				box3 = box3.stretch(0.0, -1.0E-5F, 0.0);
+			}
 
-            if(vec3d3.y < (double)this.stepHeight && vec3d4.horizontalLengthSquared() > vec3d2.horizontalLengthSquared()) {
-                vec3d2 = vec3d4;
-            }
+			List<VoxelShape> list2 = this.findCollisionsForMovement(world, list, box3);
+			float f = (float)vec3d.y;
+			float[] fs = collectStepHeights(box2, list2, this.stepHeight, f);
 
-            if(vec3d2.horizontalLengthSquared() > vec3d.horizontalLengthSquared()) {
-                return vec3d2.add(this.adjustMovementForCollisions(new Vec3d(0.0, -vec3d2.y + movement.y, 0.0), box.offset(vec3d2), world, list));
-            }
+			for (float g : fs) {
+				Vec3d vec3d2 = adjustMovementForCollisions(new Vec3d(movement.x, (double)g, movement.z), box2, list2);
+				if (vec3d2.horizontalLengthSquared() > vec3d.horizontalLengthSquared()) {
+					double d = box.minY - box2.minY;
+					return vec3d2.add(0.0, -d, 0.0);
+				}
+			}
         }
 
         return vec3d;
     }
+    
+    private List<VoxelShape> findCollisionsForMovement(WorldView world, List<VoxelShape> regularCollisions, Box movingEntityBoundingBox
+    	) {
+    		Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(regularCollisions.size() + 1);
+    		if (!regularCollisions.isEmpty()) {
+    			builder.addAll(regularCollisions);
+    		}
+
+    		builder.addAll(this.getBlockCollisions(world, movingEntityBoundingBox));
+    		return builder.build();
+    	}
+    
+    private static float[] collectStepHeights(Box collisionBox, List<VoxelShape> collisions, float f, float stepHeight) {
+		FloatSet floatSet = new FloatArraySet(4);
+
+		for (VoxelShape voxelShape : collisions) {
+			for (double d : voxelShape.getPointPositions(Axis.Y)) {
+				float g = (float)(d - collisionBox.minY);
+				if (!(g < 0.0F) && g != stepHeight) {
+					if (g > f) {
+						break;
+					}
+
+					floatSet.add(g);
+				}
+			}
+		}
+
+		float[] fs = floatSet.toFloatArray();
+		FloatArrays.unstableSort(fs);
+		return fs;
+	}
 
     public Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, WorldView world, List<VoxelShape> entityCollisions) {
         ImmutableList.Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(entityCollisions.size() + 1);
@@ -1120,20 +1183,18 @@ public class Agent {
     }
 
     public float getVelocityMultiplier(WorldView world) {
-        if(this.fallFlying) return 1.0F;
-
-        Block block = world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ)).getBlock();
-        float blockMult = block.getVelocityMultiplier();
-
-        if(block == Blocks.WATER || block == Blocks.BUBBLE_COLUMN) return blockMult;
-
-        BlockPos pos = new BlockPos(this.blockX, MathHelper.floor(this.posY - 0.5000001D), this.blockZ);
-        return (double)blockMult == 1.0D ? world.getBlockState(pos).getBlock().getVelocityMultiplier() : blockMult;
+    	BlockState blockState = world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ));
+		float f = blockState.getBlock().getVelocityMultiplier();
+		if (!blockState.isOf(Blocks.WATER) && !blockState.isOf(Blocks.BUBBLE_COLUMN)) {
+			return (double)f == 1.0 ? world.getBlockState(this.getLandingPos(world)).getBlock().getVelocityMultiplier() : f;
+		} else {
+			return f;
+		}
     }
 
     public BlockPos getLandingPos(WorldView world) {
         BlockPos pos = new BlockPos(this.blockX, MathHelper.floor(this.posY - (double)0.2F), this.blockZ);
-
+        
         if(!world.getBlockState(pos).isAir()) {
             return pos;
         }
@@ -1194,27 +1255,35 @@ public class Agent {
 
     public boolean canCollide(WorldView world, Box box) {
         AgentBlockCollisions collisions = new AgentBlockCollisions(world, this, box, true);
+        
+        while (collisions.hasNext()) {
+			if (!collisions.next().isEmpty()) {
+				return true;
+			}
+		}
 
-        if(!collisions.hasNext()) {
-            this.scannedBlocks += collisions.scannedBlocks;
-            return false;
-        }
+		return false;
 
-        while(collisions.next().isEmpty()) {
-            if(!collisions.hasNext()) {
-                this.scannedBlocks += collisions.scannedBlocks;
-                return false;
-            }
-        }
-
-        this.scannedBlocks += collisions.scannedBlocks;
-        return true;
+//        if(!collisions.hasNext()) {
+//            this.scannedBlocks += collisions.scannedBlocks;
+//            return false;
+//        }
+//
+//        while(collisions.next().isEmpty()) {
+//            if(!collisions.hasNext()) {
+//                this.scannedBlocks += collisions.scannedBlocks;
+//                return false;
+//            }
+//        }
+//
+//        this.scannedBlocks += collisions.scannedBlocks;
+//        return true;
     }
 
     private boolean wouldCollideAt(WorldView world, BlockPos pos) {
-        Box box2 = new Box(pos.getX(), this.box.minY, pos.getZ(),
-            (double)pos.getX() + 1.0D, this.box.maxY, (double)pos.getZ() + 1.0D);//.contract(1.0E-7);
-        return this.canCollide(world, box2);
+    	Box box = this.box;
+//		Box box2 = new Box((double)pos.getX(), box.minY, (double)pos.getZ(), (double)pos.getX() + 1.0, box.maxY, (double)pos.getZ() + 1.0).contract(1.0E-7);
+        return this.canCollide(world, box);
     }
 
     public void setSprinting(boolean sprinting) {

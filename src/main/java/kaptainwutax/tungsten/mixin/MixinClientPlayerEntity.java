@@ -13,6 +13,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.encryption.PlayerPublicKey;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
@@ -41,23 +42,23 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 		if(!this.getAbilities().flying) {
 			Agent.INSTANCE = Agent.of((ClientPlayerEntity)(Object)this);
 			Agent.INSTANCE.tick(this.getWorld());
-			TungstenMod.COLLISION_BOX = new Cuboid(new Vec3d(Agent.INSTANCE.box.minX, Agent.INSTANCE.box.minY, Agent.INSTANCE.box.minZ), new Vec3d(Agent.INSTANCE.dimensions.width(), Agent.INSTANCE.dimensions.height(), Agent.INSTANCE.dimensions.width()), Agent.INSTANCE.collidedSoftly || Agent.INSTANCE.horizontalCollision || Agent.INSTANCE.verticalCollision ? Color.RED : Color.WHITE);
 		}
 
-		if(TungstenMod.runKeyBinding.isPressed() && !PathFinder.active) {
-			PathFinder.find(this.getWorld(), TungstenMod.TARGET);
+		if(TungstenMod.runKeyBinding.isPressed() && !TungstenMod.PATHFINDER.active) {
+			TungstenMod.PATHFINDER.find(this.getWorld(), TungstenMod.TARGET);
 		}
-		if(TungstenMod.runBlockSearchKeyBinding.isPressed() && !PathFinder.active) {
+		if(TungstenMod.runBlockSearchKeyBinding.isPressed() && !TungstenMod.PATHFINDER.active) {
 			BlockSpacePathFinder.find(getWorld(), TungstenMod.TARGET);
 		}
-		if (TungstenMod.pauseKeyBinding.isPressed() && PathFinder.thread != null && PathFinder.thread.isAlive()) {
-			PathFinder.thread.interrupt();
+		if (TungstenMod.pauseKeyBinding.isPressed() && TungstenMod.PATHFINDER.thread != null && TungstenMod.PATHFINDER.thread.isAlive()) {
+			TungstenMod.PATHFINDER.thread.interrupt();
 			TungstenMod.RENDERERS.clear();
 			TungstenMod.TEST.clear();
 		}
 		
 		if (TungstenMod.createGoalKeyBinding.isPressed()) {
-			TungstenMod.TARGET = MinecraftClient.getInstance().player.getPos();
+			BlockPos cameraBlockPos = MinecraftClient.getInstance().gameRenderer.getCamera().getBlockPos();
+			TungstenMod.TARGET = new Vec3d(cameraBlockPos.getX() + 0.5, cameraBlockPos.getY() - 1, cameraBlockPos.getZ() + 0.5);
 		}
 	}
 

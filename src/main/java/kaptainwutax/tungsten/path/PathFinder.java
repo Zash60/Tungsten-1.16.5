@@ -6,8 +6,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
+import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
@@ -26,8 +28,9 @@ import net.minecraft.world.WorldView;
 
 public class PathFinder {
 
-	public static boolean active = false;
-	public static Thread thread = null;
+	public boolean active = false;
+	public boolean stop = false;
+	public Thread thread = null;
 	protected static final double[] COEFFICIENTS = {1.5, 2, 2.5, 3, 4, 5, 10};
 	protected static final Node[] bestSoFar = new Node[COEFFICIENTS.length];
 	private static final double minimumImprovement = 0.21;
@@ -35,7 +38,7 @@ public class PathFinder {
 	protected static int NEXT_CLOSEST_BLOCKNODE_IDX = 1;
 	
 	
-	public static void find(WorldView world, Vec3d target) {
+	public void find(WorldView world, Vec3d target) {
 		if(active)return;
 		active = true;
 		NEXT_CLOSEST_BLOCKNODE_IDX = 1;
@@ -53,20 +56,25 @@ public class PathFinder {
 		thread.start();
 	}
 
-	private static void search(WorldView world, Vec3d target) {
+	private void search(WorldView world, Vec3d target) {
 		boolean failing = true;
 		TungstenMod.RENDERERS.clear();
 		NEXT_CLOSEST_BLOCKNODE_IDX = 1;
-
+		long startTime = System.currentTimeMillis();
+		long primaryTimeoutTime = startTime + 8000;
+		int numNodesConsidured = 0;
+		int timeCheckInterval = 1 << 8;
 		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
-		
-		double startTime = System.currentTimeMillis();
+		if (player.getPos().distanceTo(target) < 1.0) {
+			Debug.logMessage("Already at target location!");
+			return;
+		}
 		
 
 		Node start = new Node(null, Agent.of(player), null, 0);
 		start.combinedCost = computeHeuristic(start.agent.getPos(), start.agent.onGround, target);
 		
-		List<BlockNode> blockPath = kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder.search(world, target);
+		Optional<List<BlockNode>> blockPath = kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder.search(world, target);
 		
 		double[] bestHeuristicSoFar = new double[COEFFICIENTS.length];//keep track of the best node by the metric of (estimatedCostToGoal + cost / COEFFICIENTS[i])
 		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
@@ -74,21 +82,22 @@ public class PathFinder {
             bestSoFar[i] = start;
         }
 		BinaryHeapOpenSet openSet = new BinaryHeapOpenSet();
-		Set<Vec3d> closed = new HashSet<>(); 
-		Set<BlockNode> achived = new HashSet<>();
+		Set<Vec3d> closed = new HashSet<>();
 		openSet.insert(start);
 		while(!openSet.isEmpty()) {
+			if(TungstenMod.pauseKeyBinding.isPressed() || stop) break;
 			TungstenMod.RENDERERS.clear();
-			renderBlockPath(blockPath);
+			 renderPathCurrentlyExecuted();
+			if (blockPath.isPresent()) renderBlockPath(blockPath.get());
 			Node next = openSet.removeLowest();
 			if (shouldNodeBeSkiped(next, target, closed, true)) continue;
 
 			
 			if(TungstenMod.pauseKeyBinding.isPressed()) break;
-			double minVel = 0.04;
-			if(next.agent.getPos().squaredDistanceTo(target) <= 0.08D && !failing /*|| !failing && (startTime + 5000) - System.currentTimeMillis() <= 0*/) {
+			double minVel = 0.2;
+			if(next.agent.getPos().squaredDistanceTo(target) <= 0.2D && !failing /*|| !failing && (startTime + 5000) - System.currentTimeMillis() <= 0*/) {
 				TungstenMod.RENDERERS.clear();
-				renderBlockPath(blockPath);
+				if (blockPath.isPresent()) renderBlockPath(blockPath.get());
 				Node n = next;
 				List<Node> path = new ArrayList<>();
 
@@ -101,15 +110,75 @@ public class PathFinder {
 
 				path.add(n);
 				Collections.reverse(path);
-				if (path.get(path.size()-1).agent.velX < minVel && path.get(path.size()-1).agent.velX > -minVel && path.get(path.size()-1).agent.velZ < minVel && path.get(path.size()-1).agent.velZ > -minVel) {					
+				if (!TungstenMod.EXECUTOR.isRunning() && path.get(path.size()-1).agent.velX < minVel && path.get(path.size()-1).agent.velX > -minVel && path.get(path.size()-1).agent.velZ < minVel && path.get(path.size()-1).agent.velZ > -minVel) {					
+					TungstenMod.EXECUTOR.cb = () -> {
+						Debug.logMessage("Finished!");
+						TungstenMod.RENDERERS.clear();
+	        			TungstenMod.TEST.clear();
+					};
 					TungstenMod.EXECUTOR.setPath(path);
-					break;
+					return;
 				}
-			} /* else if (previous != null && next.agent.getPos().squaredDistanceTo(target) > previous.agent.getPos().squaredDistanceTo(target)) continue; */
+			} else if ((numNodesConsidured & (timeCheckInterval - 1)) == 0)
+				if (NEXT_CLOSEST_BLOCKNODE_IDX > blockPath.get().size() - 3 && blockPath.get().getLast().getPos().squaredDistanceTo(target) > 40.0D) {
+					closed = new HashSet<>();
+//					Optional<List<Node>> result = bestSoFar(true, numNodesConsidured, start);
+//	        		if (result.isPresent()) {
+//	        			TungstenMod.EXECUTOR.setPath(result.get());
+//	        		} else {
+//	        			player.sendMessage(Text.literal("Failed!"));
+//	                    break;
+//	        		}
+	            	openSet = new BinaryHeapOpenSet();
+	        		openSet.insert(new Node(null, Agent.of(player), null, 0));
+	        		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
+	                    bestHeuristicSoFar[i] = start.heuristic;
+	                    bestSoFar[i] = start;
+	                }
+					blockPath = kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder.search(world, target);
+					continue;
+				}
 			if(TungstenMod.RENDERERS.size() > 9000) {
 				TungstenMod.RENDERERS.clear();
 			}
+			 renderPathCurrentlyExecuted();
+			if ((numNodesConsidured & (timeCheckInterval - 1)) == 0) { // only call this once every 64 nodes (about half a millisecond)
+                long now = System.currentTimeMillis(); // since nanoTime is slow on windows (takes many microseconds)
+                if ((!failing && now - primaryTimeoutTime >= 0) && !TungstenMod.EXECUTOR.isRunning()) {
+            		Optional<List<Node>> result = bestSoFar(true, numNodesConsidured, start);
+            		if (player.getPos().distanceTo(result.get().getFirst().agent.getPos()) < 1) {
+	            		if (result.isPresent()) {
+	            			TungstenMod.EXECUTOR.setPath(result.get());
+	            		} else {
+	            			Debug.logWarning("Failed!");
+	                        break;
+	            		}
+	                	openSet = new BinaryHeapOpenSet();
+	            		openSet.insert(new Node(null, Agent.of(
+	            				result.get().getLast().agent,
+	            				result.get().getLast().input.forward,
+	            				result.get().getLast().input.back,
+	            				result.get().getLast().input.left,
+	            				result.get().getLast().input.right,
+	            				result.get().getLast().input.jump,
+	            				result.get().getLast().input.sneak,
+	            				result.get().getLast().input.sprint,
+	            				result.get().getLast().input.pitch,
+	            				result.get().getLast().input.yaw
+	            				), null, 0));
+	            		closed = new HashSet<>();
+	            		startTime = System.currentTimeMillis() - 200;
+	            		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
+	                        bestHeuristicSoFar[i] = start.heuristic;
+	                        bestSoFar[i] = start;
+	                    }
+	            		continue;
+            		}
+                }
+            }
+			numNodesConsidured++;
 			 renderPathSoFar(next);
+			 renderPathCurrentlyExecuted();
 
 			 TungstenMod.RENDERERS.add(new Cuboid(next.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), Color.RED));
 			 
@@ -118,6 +187,7 @@ public class PathFinder {
 //             } catch (InterruptedException ignored) {}
 			 
 			for(Node child : next.getChildren(world, target)) {
+				if(stop) break;
 //				if (!child.agent.isSubmergedInWater && !child.agent.isClimbing(world) && shouldNodeBeSkiped(child, target, closed)) continue;
 //				if(closed.contains(child.agent.getPos()))continue;
 				
@@ -137,7 +207,7 @@ public class PathFinder {
 				
 				// AStar? HEURISTIC CALC
 //				if (next.agent.getPos().distanceTo(child.agent.getPos()) < 0.2) continue;
-				updateNode(world, next, child, target, blockPath);
+				updateNode(world, next, child, target, blockPath.get());
 				
                 if (child.isOpen()) {
                     openSet.update(child);
@@ -154,8 +224,52 @@ public class PathFinder {
 				TungstenMod.RENDERERS.add(new Cuboid(child.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), child.color));
 			}
 		}
-		if (openSet.isEmpty()) player.sendMessage(Text.literal("Ran out of nodes!"));
+		if (stop) {
+			stop = false;
+			return;
+		}
+		if (openSet.isEmpty()) Debug.logWarning("Ran out of nodes!");
 	}
+	
+	protected static Optional<List<Node>> bestSoFar(boolean logInfo, int numNodes, Node startNode) {
+        if (startNode == null) {
+            return Optional.empty();
+        }
+        double bestDist = 0;
+        for (int i = 0; i < COEFFICIENTS.length; i++) {
+            if (bestSoFar[i] == null) {
+                continue;
+            }
+            double dist = computeHeuristic(startNode.agent.getPos(), startNode.agent.onGround || startNode.agent.slimeBounce, bestSoFar[i].agent.getPos());
+            if (dist > bestDist) {
+                bestDist = dist;
+            }
+            if (dist < MIN_DIST_PATH * MIN_DIST_PATH) { // square the comparison since distFromStartSq is squared
+                if (logInfo) {
+                    if (COEFFICIENTS[i] >= 3) {
+                        System.out.println("Warning: cost coefficient is greater than three! Probably means that");
+                        System.out.println("the path I found is pretty terrible (like sneak-bridging for dozens of blocks)");
+                        System.out.println("But I'm going to do it anyway, because yolo");
+                    }
+                    System.out.println("Path goes for " + Math.sqrt(dist) + " blocks");
+                }
+                Node n = bestSoFar[i];
+                List<Node> path = new ArrayList<>();
+
+				while(n.parent != null) {
+					path.add(n);
+					TungstenMod.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
+					TungstenMod.RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+					n = n.parent;
+				}
+
+				path.add(n);
+				Collections.reverse(path);
+                return Optional.of(path);
+            }
+        }
+        return Optional.empty();
+    }
 	
 	private static boolean shouldNodeBeSkiped(Node n, Vec3d target, Set<Vec3d> closed) {
 		return shouldNodeBeSkiped(n, target, closed, false);
@@ -165,8 +279,8 @@ public class PathFinder {
 		if (n.agent.getPos().distanceTo(target) < 1.0 /*|| n.agent.isSubmergedInWater*/ /*|| n.agent.isClimbing(MinecraftClient.getInstance().world)*/) {
 			if(closed.contains(new Vec3d(Math.round(n.agent.getPos().x*1000), Math.round(n.agent.getPos().y * 1000), Math.round(n.agent.getPos().z*1000)))) return true;
 			if (addToClosed) closed.add(new Vec3d(Math.round(n.agent.getPos().x*1000), Math.round(n.agent.getPos().y * 1000), Math.round(n.agent.getPos().z*1000)));
-		} else if(closed.contains(new Vec3d(Math.round(n.agent.getPos().x*10), Math.round(n.agent.getPos().y * 10), Math.round(n.agent.getPos().z*10)))) return true;
-		if (addToClosed) closed.add(new Vec3d(Math.round(n.agent.getPos().x*10), Math.round(n.agent.getPos().y * 10), Math.round(n.agent.getPos().z*10)));
+		} else if(closed.contains(new Vec3d(Math.round(n.agent.getPos().x*100), Math.round(n.agent.getPos().y * 100), Math.round(n.agent.getPos().z*100)))) return true;
+		if (addToClosed) closed.add(new Vec3d(Math.round(n.agent.getPos().x*100), Math.round(n.agent.getPos().y * 100), Math.round(n.agent.getPos().z*100)));
 		
 		return false;
 	}
@@ -302,6 +416,7 @@ public class PathFinder {
 			
 			if (node.previous != null)
 			TungstenMod.RENDERERS.add(new Line(new Vec3d(node.previous.x + 0.5, node.previous.y + 0.1, node.previous.z + 0.5), new Vec3d(node.x + 0.5, node.y + 0.1, node.z + 0.5), Color.RED));
+			if (nodes.size() <= NEXT_CLOSEST_BLOCKNODE_IDX) NEXT_CLOSEST_BLOCKNODE_IDX = nodes.size()-1;
             TungstenMod.RENDERERS.add(new Cuboid(node.getPos(), new Vec3d(1.0D, 1.0D, 1.0D), 
             		(nodes.get(NEXT_CLOSEST_BLOCKNODE_IDX).equals(node)) ? Color.WHITE : Color.BLUE
             		));
@@ -315,7 +430,17 @@ public class PathFinder {
 			i++;
 			n = n.parent;
 		}
-		System.out.println(i);
+	}
+	
+	public static void renderPathCurrentlyExecuted() {
+		if (TungstenMod.EXECUTOR == null || TungstenMod.EXECUTOR.getPath() == null || !TungstenMod.EXECUTOR.isRunning()) return;
+		Node n = TungstenMod.EXECUTOR.getPath().getLast();
+		while (n.parent != null) {
+			TungstenMod.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
+			TungstenMod.RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+			n = n.parent;
+		}
+		
 	}
 	
 }

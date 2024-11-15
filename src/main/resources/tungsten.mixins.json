@@ -14,7 +14,12 @@
     "MixinShapeContext",
     "MixinClientPlayNetworkHandler",
     "MixinWorldChunk",
-    "MixinMinecraftClient"
+    "MixinMinecraftClient",
+    "MixinClientCommandSource",
+    "AccessorChatInputSuggestor",
+    "MixinChatInputSuggestor",
+    "MixinCommandSource",
+    "MixinSuggestionWindow"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -153,7 +153,7 @@ public class BlockNode {
 		List<BlockNode> nodes = getNodesIn2DCircule(6, this, goal);
 		nodes.removeIf((child) -> {
 			double heightDiff = child.y - y;
-			System.out.println(heightDiff);
+//			System.out.println(heightDiff);
 			if ((world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.WATER) 
 					|| world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.FLOWING_WATER))
 					&& wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
@@ -276,14 +276,14 @@ public class BlockNode {
             }
 
             currPos.set(x, y, z);
-            if (isObscured(world, currPos)) {
-				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-				return false;
-			} else {
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			}
+//            if (isObscured(world, currPos)) {
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+//				return false;
+//			} else {
+////				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+////				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//			}
 //        }
             if (x < x2) {
                 x++;
@@ -292,14 +292,14 @@ public class BlockNode {
             }
             currPos.set(x, y, z);
 
-            if (isObscured(world, currPos)) {
-				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-				return false;
-			} else {
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			}
+//            if (isObscured(world, currPos)) {
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+//				return false;
+//			} else {
+////				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+////				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//			}
 
             if (y < y2) {
                 y++;
@@ -388,7 +388,7 @@ public class BlockNode {
 		double g = 32.656;  // Acceleration due to gravity in m/s^2
 		double v_sprint = 5.8;  // Sprinting speed in m/s 5.8 based on meteor player.speed var
 		double yMax = (parent.wasOnSlime && parent.previous != null && parent.previous.y - parent.y != 0 ? getSlimeBounceHeight(parent.previous.y - parent.y)-0.5 :  2);
-		if (yMax != 2.0)System.out.println(yMax);
+//		if (yMax != 2.0)System.out.println(yMax);
 		int distanceWanted = d;
 		for( int py = -14; py < yMax; py++ ) {
 		

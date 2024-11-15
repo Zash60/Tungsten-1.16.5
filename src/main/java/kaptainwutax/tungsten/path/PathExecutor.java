@@ -5,6 +5,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 
 import java.util.List;
+import java.util.function.Function;
 
 import kaptainwutax.tungsten.TungstenMod;
 
@@ -13,6 +14,8 @@ public class PathExecutor {
     protected List<Node> path;
     protected int tick = 0;
     protected boolean allowedFlying = false;
+    public boolean stop = false;
+    public Runnable cb = null;
 
     public PathExecutor() {
     	try {
@@ -27,6 +30,10 @@ public class PathExecutor {
     	this.path = path;
     	this.tick = 0;
 	}
+	
+	public List<Node> getPath() {
+		return this.path;
+	}
 
 	public boolean isRunning() {
         return this.path != null && this.tick <= this.path.size();
@@ -34,7 +41,7 @@ public class PathExecutor {
 
     public void tick(ClientPlayerEntity player, GameOptions options) {
     	player.getAbilities().allowFlying = false;
-    	if(TungstenMod.pauseKeyBinding.isPressed()) {
+    	if(TungstenMod.pauseKeyBinding.isPressed() || stop) {
     		this.tick = this.path.size();
 		    options.forwardKey.setPressed(false);
 		    options.backKey.setPressed(false);
@@ -44,6 +51,8 @@ public class PathExecutor {
 		    options.sneakKey.setPressed(false);
 		    options.sprintKey.setPressed(false);
 		    player.getAbilities().allowFlying = allowedFlying;
+		    this.path = null;
+		    stop = false;
     		return;
     	}
     	if(this.tick == this.path.size()) {
@@ -55,6 +64,12 @@ public class PathExecutor {
 		    options.sneakKey.setPressed(false);
 		    options.sprintKey.setPressed(false);
 		    player.getAbilities().allowFlying = true;
+		    this.path = null;
+		    stop = false;
+		    if (cb != null) {
+		    	cb.run();
+		    	cb = null;
+		    }
 	    } else {
 		    Node node = this.path.get(this.tick);
 		    if(this.tick != 0) {

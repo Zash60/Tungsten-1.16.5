@@ -1,0 +1,42 @@
+package kaptainwutax.tungsten.commands;
+
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+
+import kaptainwutax.tungsten.Debug;
+import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.commandsystem.Command;
+import kaptainwutax.tungsten.path.PathFinder;
+import net.minecraft.command.CommandSource;
+
+public class StopCommand extends Command {
+	public StopCommand(TungstenMod mod) {
+        super("stop", "Tell bot to stop", mod);
+    }
+
+	@Override
+	public void build(LiteralArgumentBuilder<CommandSource> builder) {
+		
+		builder.executes(context -> {
+	        try {
+				
+	        	if(TungstenMod.PATHFINDER.active || TungstenMod.EXECUTOR.isRunning()) {
+	        		TungstenMod.PATHFINDER.stop = true;
+	        		TungstenMod.EXECUTOR.stop = true;
+	        		if (TungstenMod.PATHFINDER.thread != null && TungstenMod.PATHFINDER.thread.isAlive()) {
+	        			TungstenMod.PATHFINDER.thread.interrupt();
+	        			TungstenMod.RENDERERS.clear();
+	        			TungstenMod.TEST.clear();
+	        		}
+					Debug.logMessage("Stopped!");
+	    		} else {
+					Debug.logMessage("Nothing to stop.");
+	    		}
+
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+			
+			return SINGLE_SUCCESS;
+		});
+	}
+}

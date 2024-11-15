@@ -27,12 +27,6 @@ public class MixinDebugRenderer {
         BufferBuilder builder;
 //
         RenderSystem.lineWidth(2.0F);
-        
-        if (TungstenMod.COLLISION_BOX != null) {
-        	builder = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
-        	TungstenMod.COLLISION_BOX.render(builder);
-            BufferRenderer.drawWithGlobalProgram(builder.end());
-        }
 
         builder = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
         Cuboid goal = new Cuboid(TungstenMod.TARGET.subtract(0.5D, 0D, 0.5D), new Vec3d(1.0D, 2.0D, 1.0D), Color.GREEN);
