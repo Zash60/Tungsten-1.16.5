@@ -1,6 +1,7 @@
 package kaptainwutax.tungsten.path.blockSpaceSearchAssist;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import kaptainwutax.tungsten.TungstenMod;
@@ -62,6 +63,7 @@ public class BlockNode {
     public BlockNode previous;
     
     private boolean wasOnSlime;
+    private boolean wasOnLadder;
 
     /**
      * Where is this node in the array flattenization of the binary heap? Needed for decrease-key operations.
@@ -80,6 +82,7 @@ public class BlockNode {
         this.y = pos.getY();
         this.z = pos.getZ();
         this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(pos.down()).getBlock() instanceof SlimeBlock;
+        this.wasOnLadder = MinecraftClient.getInstance().world.getBlockState(pos).getBlock() instanceof LadderBlock;
     }
     
     public BlockNode(int x, int y, int z, Goal goal) {
@@ -94,11 +97,13 @@ public class BlockNode {
         this.y = y;
         this.z = z;
         this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y-1, z)).getBlock() instanceof SlimeBlock;
+        this.wasOnLadder = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
     }
     
     public BlockNode(int x, int y, int z, Goal goal, BlockNode parent, double cost) {
         this.previous = parent;
         this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y-1, z)).getBlock() instanceof SlimeBlock;
+        this.wasOnLadder = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
         this.cost = parent != null ? 0 : ActionCosts.COST_INF;
         this.estimatedCostToGoal = goal.heuristic(x, y, z);
         if (Double.isNaN(estimatedCostToGoal)) {
@@ -148,101 +153,23 @@ public class BlockNode {
     }
     
     public List<BlockNode> getChildren(WorldView world, Goal goal) {
-		BlockNode n = this.previous;
 		
 		List<BlockNode> nodes = getNodesIn2DCircule(6, this, goal);
 		nodes.removeIf((child) -> {
-			double heightDiff = child.y - y;
-//			System.out.println(heightDiff);
-			if ((world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.WATER) 
-					|| world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.FLOWING_WATER))
-					&& wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
-//			if(previous != null && previous.y-y < 1 && wasOnSlime || !wasOnSlime && child.y - y > 1) return true;
-			if (!wasOnSlime && heightDiff > 0 && getPos().distanceTo(child.getPos()) >= 5) return true;
-			if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
-			if (world.getBlockState(child.getBlockPos()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
-			if(world.getBlockState(child.getBlockPos().down()).isAir()
-					&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock)) return true;
-			if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
-					&& world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) return true;
-			if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SeaPickleBlock) return true;
-			if (world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
-					&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) {
-				if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos())) return true;
-			} else 
-				if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos().down()) 
-					&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock)) return true;
-			if(world.getBlockState(child.getBlockPos()).isOf(Blocks.LAVA)) return true;
-//			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock) return true;
-//			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock) return false;
-			if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LilyPadBlock) return true;
-			if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof CarpetBlock) return true;
-			if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof DaylightDetectorBlock) return true;
-			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof StairsBlock) return true;
-			
-			VoxelShape blockShape = world.getBlockState(child.getBlockPos().down()).getCollisionShape(world, child.getBlockPos().down());
-			VoxelShape previousBlockShape = world.getBlockState(getBlockPos().down()).getCollisionShape(world, getBlockPos().down());
-			
-			if (!blockShape.isEmpty() && 
-					blockShape.getBoundingBox().maxY > 1.3
-					&& !previousBlockShape.isEmpty()
-					&& previousBlockShape.getBoundingBox().maxY < 1.3
-					&& previousBlockShape.getBoundingBox().maxY > 0.5
-					&& (heightDiff > 0
-					&& getPos().distanceTo(child.getPos()) > 4 )) return true;
-			
-			
-			if(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
-					&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM
-					&& heightDiff > 0
-					&& (world.getBlockState(getBlockPos().down()).getBlock() instanceof SlabBlock
-					&& world.getBlockState(getBlockPos().down()).get(Properties.SLAB_TYPE) != SlabType.BOTTOM
-					|| world.getBlockState(getBlockPos()).getBlock() instanceof SlabBlock
-					&& world.getBlockState(getBlockPos()).get(Properties.SLAB_TYPE) != SlabType.BOTTOM
-					)
-					) return true;
-
-
-			if(!blockShape.isEmpty() && 
-					blockShape.getBoundingBox().maxY > 1.3
-					&& y - child.y < 0
-					&& !(world.getBlockState(getBlockPos().down()).getBlock() instanceof SlabBlock
-					&& world.getBlockState(getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
-					&& !previousBlockShape.isEmpty() && 
-					previousBlockShape.getBoundingBox().maxY < 1.3
-					) return true;
-			if((world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
-					&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM
-					||  !blockShape.isEmpty() && 
-					blockShape.getBoundingBox().maxY > 1.3)
-					&& !(world.getBlockState(getBlockPos()).getBlock() instanceof SlabBlock
-							&& world.getBlockState(getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
-					&& y - child.y < 0
-					&& !previousBlockShape.isEmpty() && 
-					previousBlockShape.getBoundingBox().maxY < 1.3
-					) return true;
-
-			
-			if (!wasCleared(world, getBlockPos(), child.getBlockPos())) {
-	            return true;
-	        }
-
-			return false;
+			return shouldRemoveNode(world, child);
 		});
 		
-//		for (Iterator iterator = nodes.iterator(); iterator.hasNext();) {
-//			BlockNode blockNode = (BlockNode) iterator.next();
-//
-//			TungstenMod.TEST.add(new Cuboid(new Vec3d(blockNode.x, blockNode.y, blockNode.z), new Vec3d(1.0D, 1.0D, 1.0D), blockNode.wasOnSlime ? Color.GREEN : Color.WHITE));
+//		for (BlockNode blockNode : nodes) {
+//			TungstenMod.TEST.add(new Cuboid(new Vec3d(blockNode.x, blockNode.y, blockNode.z), new Vec3d(1.0D, 1.0D, 1.0D), blockNode.wasOnLadder ? Color.GREEN : Color.WHITE));
 //		}
-//		
-//		if (wasOnSlime && previous != null && previous.y - y > 0
-//				|| previous != null && previous.y - y < 0) {
+//
+//		if (wasOnLadder) {
 //				try {
-//					Thread.sleep(2500);
+//					Thread.sleep(200);
 //				} catch (InterruptedException ignored) {}
 //		}
-//		TungstenMod.TEST.clear();
+		
+		TungstenMod.TEST.clear();
 		
 		return nodes;
 		
@@ -256,56 +183,57 @@ public class BlockNode {
 	    int x2 = end.getX();
 	    int y2 = end.getY();
 	    int z2 = end.getZ();
-	    
-	    int thickness = 1;
 		TungstenMod.TEST.clear();
 //		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
-//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.BLUE));
-
+//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2),
+//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 		BlockPos.Mutable currPos = new BlockPos.Mutable();
 		int x = x1;
         int y = y1;
         int z = z1;
 
         while (x != x2 || y != y2 || z != z2) {
-            
             if (z < z2) {
                 z++;
             } else if (z > z2) {
                 z--;
             }
+//    		TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 
             currPos.set(x, y, z);
-//            if (isObscured(world, currPos)) {
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+            if (isObscured(world, currPos)) {
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 //				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-//				return false;
-//			} else {
-////				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-////				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//			}
+				return false;
+			} else {
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			}
 //        }
             if (x < x2) {
                 x++;
             } else if (x > x2) {
                 x--;
             }
+//    		TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
             currPos.set(x, y, z);
 
-//            if (isObscured(world, currPos)) {
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-//				return false;
-//			} else {
-////				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-////				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//			}
+            if (isObscured(world, currPos)) {
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+				return false;
+			} else {
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			}
 
             if (y < y2) {
                 y++;
             } else if (y > y2) {
                 y--;
             }
+//    		TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
             currPos.set(x, y, z);
             
             if (isObscured(world, currPos)) {
@@ -316,6 +244,9 @@ public class BlockNode {
 //				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 //				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			}
+//			try {
+//			Thread.sleep(450);
+//		} catch (InterruptedException ignored) {}
         }
 //		try {
 //		Thread.sleep(250);
@@ -341,6 +272,7 @@ public class BlockNode {
     public static boolean hasBiggerCollisionShapeThanAbove(WorldView world, BlockPos pos) {
         // Get the block states of the block at pos and the two blocks above it
         BlockState blockState = world.getBlockState(pos);
+        if (blockState.getBlock() instanceof LadderBlock) return false;
         BlockState aboveBlockState1 = world.getBlockState(pos.up(1));
         BlockState aboveBlockState2 = world.getBlockState(pos.up(2));
 
@@ -388,6 +320,9 @@ public class BlockNode {
 		double g = 32.656;  // Acceleration due to gravity in m/s^2
 		double v_sprint = 5.8;  // Sprinting speed in m/s 5.8 based on meteor player.speed var
 		double yMax = (parent.wasOnSlime && parent.previous != null && parent.previous.y - parent.y != 0 ? getSlimeBounceHeight(parent.previous.y - parent.y)-0.5 :  2);
+//		if (parent.wasOnLadder) {
+//			yMax += 1;
+//		}
 //		if (yMax != 2.0)System.out.println(yMax);
 		int distanceWanted = d;
 		for( int py = -14; py < yMax; py++ ) {
@@ -400,6 +335,7 @@ public class BlockNode {
 			}
 			else
 				d = distanceWanted+1;
+            nodes.add(new BlockNode(this.x, this.y + py, this.z, goal, this, ActionCosts.WALK_ONE_BLOCK_COST));
 			for (int id = 1; id <= d; id++) {
 		        int px = id;
 		        int pz = 0;
@@ -427,6 +363,88 @@ public class BlockNode {
     
     private double getSlimeBounceHeight(double startHeight) {
     	return -0.0011 * Math.pow(startHeight, 2) + 0.43529 * startHeight + 1.7323;
+    }
+    
+    private boolean shouldRemoveNode(WorldView world, BlockNode child) {
+
+    	double heightDiff = this.y - child.y;
+////		System.out.println(heightDiff);
+		if ((world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.WATER) 
+				|| world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.FLOWING_WATER))
+				&& wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
+//		if(previous != null && previous.y-y < 1 && wasOnSlime || !wasOnSlime && child.y - y > 1) return true;
+		if (!wasOnSlime && heightDiff > 0 && getPos().distanceTo(child.getPos()) >= 5) return true;
+		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
+		if (world.getBlockState(child.getBlockPos()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
+		
+		if(world.getBlockState(child.getBlockPos().down()).isAir()
+				&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock)) return true;
+		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
+				&& world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) return true;
+		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SeaPickleBlock) return true;
+		if (world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
+				&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) {
+			if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos())) return true;
+		}
+		else 
+			if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos().down()) 
+				&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock)) return true;
+		if(world.getBlockState(child.getBlockPos()).isOf(Blocks.LAVA)) return true;
+////		if(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock) return true;
+////		if(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock) return false;
+		if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LilyPadBlock) return true;
+		if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof CarpetBlock) return true;
+		if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof DaylightDetectorBlock) return true;
+		if(world.getBlockState(child.getBlockPos()).getBlock() instanceof StairsBlock) return true;
+		
+		VoxelShape blockShape = world.getBlockState(child.getBlockPos().down()).getCollisionShape(world, child.getBlockPos().down());
+		VoxelShape previousBlockShape = world.getBlockState(getBlockPos().down()).getCollisionShape(world, getBlockPos().down());
+		
+		if (!blockShape.isEmpty() && 
+				blockShape.getBoundingBox().maxY > 1.3
+				&& !previousBlockShape.isEmpty()
+				&& previousBlockShape.getBoundingBox().maxY < 1.3
+				&& previousBlockShape.getBoundingBox().maxY > 0.5
+				&& (heightDiff > 0
+				&& getPos().distanceTo(child.getPos()) > 4 )) return true;
+		
+		
+		if(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
+				&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM
+				&& heightDiff > 0
+				&& (world.getBlockState(getBlockPos().down()).getBlock() instanceof SlabBlock
+				&& world.getBlockState(getBlockPos().down()).get(Properties.SLAB_TYPE) != SlabType.BOTTOM
+				|| world.getBlockState(getBlockPos()).getBlock() instanceof SlabBlock
+				&& world.getBlockState(getBlockPos()).get(Properties.SLAB_TYPE) != SlabType.BOTTOM
+				)
+				) return true;
+
+
+		if(!blockShape.isEmpty() && 
+				blockShape.getBoundingBox().maxY > 1.3
+				&& y - child.y < 0
+				&& !(world.getBlockState(getBlockPos().down()).getBlock() instanceof SlabBlock
+				&& world.getBlockState(getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
+				&& !previousBlockShape.isEmpty() && 
+				previousBlockShape.getBoundingBox().maxY < 1.3
+				) return true;
+		if((world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
+				&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM
+				||  !blockShape.isEmpty() && 
+				blockShape.getBoundingBox().maxY > 1.3)
+				&& !(world.getBlockState(getBlockPos()).getBlock() instanceof SlabBlock
+						&& world.getBlockState(getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
+				&& y - child.y < 0
+				&& !previousBlockShape.isEmpty() && 
+				previousBlockShape.getBoundingBox().maxY < 1.3
+				) return true;
+
+		
+		if (!wasCleared(world, getBlockPos(), child.getBlockPos())) {
+            return true;
+        }
+
+		return false;
     }
 
 }

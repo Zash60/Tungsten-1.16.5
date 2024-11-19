@@ -167,6 +167,10 @@ public class Agent {
     public Vec3d getPos() {
         return new Vec3d(this.posX, this.posY, this.posZ);
     }
+    
+    public BlockPos getBlockPos() {
+        return new BlockPos(this.blockX, this.blockY, this.blockZ);
+    }
 
     public void setPos(double x, double y, double z) {
         this.posX = x;

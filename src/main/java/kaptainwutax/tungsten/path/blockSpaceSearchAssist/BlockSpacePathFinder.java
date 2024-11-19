@@ -49,20 +49,20 @@ public class BlockSpacePathFinder {
 	}
 	
 	public static Optional<List<BlockNode>> search(WorldView world, Vec3d target) {
+		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
+		return search(world, new BlockNode(player.getBlockPos(), new Goal((int) target.x, (int) target.y, (int) target.z)), target);
+	}
+	
+	public static Optional<List<BlockNode>> search(WorldView world, BlockNode start, Vec3d target) {
 		Goal goal = new Goal((int) target.x, (int) target.y, (int) target.z);
 		boolean failing = true;
         int numNodes = 0;
         int timeCheckInterval = 1 << 6;
         long startTime = System.currentTimeMillis();
-        long primaryTimeoutTime = startTime + 320L;
+        long primaryTimeoutTime = startTime + 5020L;
 		
 		TungstenMod.RENDERERS.clear();
-
-		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 		Debug.logMessage("Searchin...");
-		
-
-		BlockNode start = new BlockNode(player.getBlockPos(), goal);
 		
 		double[] bestHeuristicSoFar = new double[COEFFICIENTS.length];//keep track of the best node by the metric of (estimatedCostToGoal + cost / COEFFICIENTS[i])
 		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
@@ -118,7 +118,8 @@ public class BlockSpacePathFinder {
 
 			
 			for(BlockNode child : next.getChildren(world, goal)) {
-				if (closed.contains(child)) continue;
+				if (TungstenMod.PATHFINDER.stop) return Optional.empty();
+//				if (closed.contains(child)) continue;
 				
 
 				updateNode(next, child, target);
@@ -187,15 +188,14 @@ public class BlockSpacePathFinder {
 	
 	private static double computeHeuristic(Vec3d position, Vec3d target) {
 	    double dx = position.x - target.x;
-	    double dy = (position.y - target.y)*3;
+	    double dy = (position.y - target.y)*5;
 	    double dz = position.z - target.z;
-	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 30;
+	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 80;
 	}
 	
 	private static void updateNode(BlockNode current, BlockNode child, Vec3d target) {
 	    Vec3d childPos = child.getPos();
-	    double tentativeCost = current.cost + ActionCosts.WALK_ONE_BLOCK_COST + (childPos.distanceTo(current.getPos()) > 4 ? 4000 : 0); // Assuming uniform cost for each step
-	    
+	    double tentativeCost = child.cost + ActionCosts.WALK_ONE_BLOCK_COST + (childPos.distanceTo(current.getPos()) > 4 ? 4000 : 0); // Assuming uniform cost for each step
 
 	    double estimatedCostToGoal = computeHeuristic(childPos, target);
 

@@ -7,6 +7,7 @@ import net.minecraft.client.option.GameOptions;
 import java.util.List;
 import java.util.function.Function;
 
+import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
 
 public class PathExecutor {
@@ -27,6 +28,7 @@ public class PathExecutor {
 
 	public void setPath(List<Node> path) {
     	this.allowedFlying = MinecraftClient.getInstance().player.getAbilities().allowFlying;
+	    stop = false;
     	this.path = path;
     	this.tick = 0;
 	}
@@ -52,6 +54,8 @@ public class PathExecutor {
 		    options.sprintKey.setPressed(false);
 		    player.getAbilities().allowFlying = allowedFlying;
 		    this.path = null;
+    		Debug.logMessage("Stop key " + TungstenMod.pauseKeyBinding.isPressed());
+    		Debug.logMessage("Stop " + stop);
 		    stop = false;
     		return;
     	}
@@ -63,7 +67,7 @@ public class PathExecutor {
 		    options.jumpKey.setPressed(false);
 		    options.sneakKey.setPressed(false);
 		    options.sprintKey.setPressed(false);
-		    player.getAbilities().allowFlying = true;
+		    player.getAbilities().allowFlying = allowedFlying;
 		    this.path = null;
 		    stop = false;
 		    if (cb != null) {

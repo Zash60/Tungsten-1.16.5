@@ -13,6 +13,7 @@ import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
+import kaptainwutax.tungsten.path.blockSpaceSearchAssist.Goal;
 import kaptainwutax.tungsten.path.calculators.BinaryHeapOpenSet;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
@@ -61,16 +62,15 @@ public class PathFinder {
 		TungstenMod.RENDERERS.clear();
 		NEXT_CLOSEST_BLOCKNODE_IDX = 1;
 		long startTime = System.currentTimeMillis();
-		long primaryTimeoutTime = startTime + 8000;
+		long primaryTimeoutTime = startTime + 250L;
 		int numNodesConsidured = 0;
-		int timeCheckInterval = 1 << 8;
+		int timeCheckInterval = 1 << 3;
 		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 		if (player.getPos().distanceTo(target) < 1.0) {
 			Debug.logMessage("Already at target location!");
 			return;
 		}
 		
-
 		Node start = new Node(null, Agent.of(player), null, 0);
 		start.combinedCost = computeHeuristic(start.agent.getPos(), start.agent.onGround, target);
 		
@@ -94,13 +94,12 @@ public class PathFinder {
 
 			
 			if(TungstenMod.pauseKeyBinding.isPressed()) break;
-			double minVel = 0.2;
+			double minVel = 0.07;
 			if(next.agent.getPos().squaredDistanceTo(target) <= 0.2D && !failing /*|| !failing && (startTime + 5000) - System.currentTimeMillis() <= 0*/) {
 				TungstenMod.RENDERERS.clear();
 				if (blockPath.isPresent()) renderBlockPath(blockPath.get());
 				Node n = next;
 				List<Node> path = new ArrayList<>();
-
 				while(n.parent != null) {
 					path.add(n);
 					TungstenMod.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
@@ -119,60 +118,86 @@ public class PathFinder {
 					TungstenMod.EXECUTOR.setPath(path);
 					return;
 				}
-			} else if ((numNodesConsidured & (timeCheckInterval - 1)) == 0)
-				if (NEXT_CLOSEST_BLOCKNODE_IDX > blockPath.get().size() - 3 && blockPath.get().getLast().getPos().squaredDistanceTo(target) > 40.0D) {
-					closed = new HashSet<>();
-//					Optional<List<Node>> result = bestSoFar(true, numNodesConsidured, start);
-//	        		if (result.isPresent()) {
-//	        			TungstenMod.EXECUTOR.setPath(result.get());
+			} 
+			if ((numNodesConsidured & (timeCheckInterval - 1)) == 0 && NEXT_CLOSEST_BLOCKNODE_IDX > blockPath.get().size() - 2 && !TungstenMod.EXECUTOR.isRunning() && blockPath.get().getLast().getPos().squaredDistanceTo(next.agent.getPos()) < 3.0D && blockPath.get().getLast().getPos().squaredDistanceTo(target) > 1.0D ) {
+        			numNodesConsidured = 0;
+//	        		if (next.agent.onGround) {
+	        			Node n = next;
+	    				List<Node> path = new ArrayList<>();
+	    				while(n.parent != null) {
+	    					path.add(n);
+	    					TungstenMod.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
+	    					TungstenMod.RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+	    					n = n.parent;
+	    				}
+
+	    				path.add(n);
+	    				Collections.reverse(path);
+	    				minVel = 0.1;
+	    				if (path.get(path.size()-1).agent.velX < minVel && path.get(path.size()-1).agent.velX > -minVel && path.get(path.size()-1).agent.velZ < minVel && path.get(path.size()-1).agent.velZ > -minVel) {					
+		        			closed = new HashSet<>();
+		        			TungstenMod.EXECUTOR.setPath(path);
+			            	openSet = new BinaryHeapOpenSet();
+			        		openSet.insert(new Node(null, next.agent, null, 0));
+			        		start = new Node(null, next.agent, null, 0);
+			        		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
+			                    bestHeuristicSoFar[i] = start.heuristic;
+			                    bestSoFar[i] = start;
+			                }
+		                	Debug.logMessage("Searching new block path");
+		                	NEXT_CLOSEST_BLOCKNODE_IDX = 1;
+							blockPath = kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder.search(world, new BlockNode(start.agent.getBlockPos(), new Goal((int) target.x, (int) target.y, (int) target.z)), target);
+							continue;
+	    				}
 //	        		} else {
 //	        			player.sendMessage(Text.literal("Failed!"));
+//	                	NEXT_CLOSEST_BLOCKNODE_IDX = 1;
+//						blockPath = kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder.search(world, target);
+//		            	openSet = new BinaryHeapOpenSet();
+//		        		openSet.insert(new Node(null, Agent.of(player), null, 0));
+//	        			closed = new HashSet<>();
 //	                    break;
 //	        		}
-	            	openSet = new BinaryHeapOpenSet();
-	        		openSet.insert(new Node(null, Agent.of(player), null, 0));
-	        		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
-	                    bestHeuristicSoFar[i] = start.heuristic;
-	                    bestSoFar[i] = start;
-	                }
-					blockPath = kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder.search(world, target);
-					continue;
 				}
 			if(TungstenMod.RENDERERS.size() > 9000) {
 				TungstenMod.RENDERERS.clear();
 			}
-			 renderPathCurrentlyExecuted();
 			if ((numNodesConsidured & (timeCheckInterval - 1)) == 0) { // only call this once every 64 nodes (about half a millisecond)
                 long now = System.currentTimeMillis(); // since nanoTime is slow on windows (takes many microseconds)
-                if ((!failing && now - primaryTimeoutTime >= 0) && !TungstenMod.EXECUTOR.isRunning()) {
-            		Optional<List<Node>> result = bestSoFar(true, numNodesConsidured, start);
-            		if (player.getPos().distanceTo(result.get().getFirst().agent.getPos()) < 1) {
-	            		if (result.isPresent()) {
-	            			TungstenMod.EXECUTOR.setPath(result.get());
-	            		} else {
-	            			Debug.logWarning("Failed!");
-	                        break;
+        		Optional<List<Node>> result = bestSoFar(true, numNodesConsidured, start);
+                if (((!failing && now - primaryTimeoutTime >= 0))) {
+					numNodesConsidured = 0;
+                	if (result.isPresent() && result.get().getLast().input != null) {
+                    	Debug.logMessage("Time ran out");
+	            		if (player.getPos().distanceTo(result.get().getFirst().agent.getPos()) < 1) {
+		            		if (result.isPresent()) {
+		                    	Debug.logMessage("Path set!");
+		            			TungstenMod.EXECUTOR.setPath(result.get());
+		            		} else {
+		            			Debug.logWarning("Failed!");
+		                        break;
+		            		}
+		                	openSet = new BinaryHeapOpenSet();
+		            		openSet.insert(new Node(null, Agent.of(
+		            				result.get().getLast().agent,
+		            				result.get().getLast().input.forward,
+		            				result.get().getLast().input.back,
+		            				result.get().getLast().input.left,
+		            				result.get().getLast().input.right,
+		            				result.get().getLast().input.jump,
+		            				result.get().getLast().input.sneak,
+		            				result.get().getLast().input.sprint,
+		            				result.get().getLast().input.pitch,
+		            				result.get().getLast().input.yaw
+		            				), null, 0));
+		            		closed = new HashSet<>();
+		            		startTime = System.currentTimeMillis() - 200;
+		            		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
+		                        bestHeuristicSoFar[i] = start.heuristic;
+		                        bestSoFar[i] = start;
+		                    }
+		            		continue;
 	            		}
-	                	openSet = new BinaryHeapOpenSet();
-	            		openSet.insert(new Node(null, Agent.of(
-	            				result.get().getLast().agent,
-	            				result.get().getLast().input.forward,
-	            				result.get().getLast().input.back,
-	            				result.get().getLast().input.left,
-	            				result.get().getLast().input.right,
-	            				result.get().getLast().input.jump,
-	            				result.get().getLast().input.sneak,
-	            				result.get().getLast().input.sprint,
-	            				result.get().getLast().input.pitch,
-	            				result.get().getLast().input.yaw
-	            				), null, 0));
-	            		closed = new HashSet<>();
-	            		startTime = System.currentTimeMillis() - 200;
-	            		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
-	                        bestHeuristicSoFar[i] = start.heuristic;
-	                        bestSoFar[i] = start;
-	                    }
-	            		continue;
             		}
                 }
             }
@@ -188,6 +213,7 @@ public class PathFinder {
 			 
 			for(Node child : next.getChildren(world, target)) {
 				if(stop) break;
+				if (player.getHungerManager().getFoodLevel() <= 6 && (child.input.sprint)) continue;
 //				if (!child.agent.isSubmergedInWater && !child.agent.isClimbing(world) && shouldNodeBeSkiped(child, target, closed)) continue;
 //				if(closed.contains(child.agent.getPos()))continue;
 				
@@ -244,7 +270,7 @@ public class PathFinder {
             if (dist > bestDist) {
                 bestDist = dist;
             }
-            if (dist < MIN_DIST_PATH * MIN_DIST_PATH) { // square the comparison since distFromStartSq is squared
+//            if (dist < MIN_DIST_PATH * MIN_DIST_PATH) { // square the comparison since distFromStartSq is squared
                 if (logInfo) {
                     if (COEFFICIENTS[i] >= 3) {
                         System.out.println("Warning: cost coefficient is greater than three! Probably means that");
@@ -254,6 +280,7 @@ public class PathFinder {
                     System.out.println("Path goes for " + Math.sqrt(dist) + " blocks");
                 }
                 Node n = bestSoFar[i];
+                if (!n.agent.onGround) continue;
                 List<Node> path = new ArrayList<>();
 
 				while(n.parent != null) {
@@ -267,7 +294,7 @@ public class PathFinder {
 				Collections.reverse(path);
                 return Optional.of(path);
             }
-        }
+//        }
         return Optional.empty();
     }
 	
@@ -289,7 +316,7 @@ public class PathFinder {
 	    double dx = position.x - target.x;
 	    double dy = 0;
 	    if (target.y != Double.MIN_VALUE) {
-		    dy = (position.y - target.y) * 1.8;//*16;
+		    dy = (position.y - target.y) * 3.8;//*16;
 		    if (!onGround || dy < 1.6 && dy > -1.6) dy = 0;
 	    }
 	    double dz = position.z - target.z;
@@ -302,13 +329,15 @@ public class PathFinder {
 	    double collisionScore = 0;
 	    double tentativeCost = current.cost + 1; // Assuming uniform cost for each step
 	    if (child.agent.horizontalCollision) {
-	        collisionScore += 25 + (Math.abs(current.agent.velZ - child.agent.velZ) + Math.abs(current.agent.velX - child.agent.velX)) * 120;
+	        collisionScore += 2500 + (Math.abs(current.agent.velZ - child.agent.velZ) + Math.abs(current.agent.velX - child.agent.velX)) * 120;
 	    }
 	    if (child.agent.touchingWater) {
-	    	collisionScore = 20000^20;
+//	    	collisionScore = 20000^20;
+	    	collisionScore += 2000;
 	    }
 	    if (child.agent.isClimbing(MinecraftClient.getInstance().world)) {
-	    	collisionScore *= 20000;
+//	    	collisionScore *= 20000;
+	    	collisionScore += 200;
 	    }
 	    if (child.agent.slimeBounce) {
 	    	collisionScore -= 20000;
@@ -318,14 +347,12 @@ public class PathFinder {
 	    if (blockPath != null) {
 	    	int closestPosIDX = findClosestPositionIDX(world, new BlockPos(child.agent.blockX, child.agent.blockY, child.agent.blockZ), blockPath);
 	    	BlockNode closestPos = blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX);
-//	    	System.out.println(closestPosIDX);
-//	    	System.out.println(NEXT_CLOSEST_BLOCKNODE_IDX);
-	    	if (closestPosIDX+1 - NEXT_CLOSEST_BLOCKNODE_IDX < 2) {
-		    	if (child.agent.onGround && closestPosIDX+1 > NEXT_CLOSEST_BLOCKNODE_IDX && closestPosIDX +1 < blockPath.size()) {
+//	    	if (closestPosIDX+1 - NEXT_CLOSEST_BLOCKNODE_IDX <= 2) {
+		    	if (closestPosIDX+1 > NEXT_CLOSEST_BLOCKNODE_IDX && closestPosIDX +1 < blockPath.size() && child.agent.getPos().distanceTo(blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX).getPos()) < 0.58) {
 		    		NEXT_CLOSEST_BLOCKNODE_IDX = closestPosIDX+1;
 			    	closestPos = blockPath.get(closestPosIDX+1);
 		    	}
-	    	}	    	    	
+//	    	}	    	    	
 	    	estimatedCostToGoal +=  computeHeuristic(childPos, child.agent.onGround || child.agent.slimeBounce, new Vec3d(closestPos.x + 0.5, closestPos.y, closestPos.z + 0.5)) * 600.5;
 	    }
 
@@ -343,17 +370,17 @@ public class PathFinder {
             throw new IllegalArgumentException("The list of positions must not be null or empty.");
         }
 
-        int closestIDX = 1;
+        int closestIDX = NEXT_CLOSEST_BLOCKNODE_IDX;
         BlockNode closest = positions.get(closestIDX);
         double minDistance = current.getSquaredDistance(closest.getPos())/* + Math.abs(closest.y - current.getY()) * 160*/;
-        
-        for (int i = 1; i < positions.size(); i++) {
+        for (int i = closestIDX+1; i < positions.size(); i++) {
         	BlockNode position = positions.get(i);
 //			if (i % 5 != 0) {
 //        		continue;
 //        	}
             double distance = current.getSquaredDistance(position.getPos())/* + Math.abs(position.y - current.getY()) * 160*/;
-            if (distance < minDistance 
+            if ( distance < 1) continue;
+            if (distance < minDistance
             		&& position.wasCleared(world, position.getBlockPos(), current)
             		) {
                 minDistance = distance;
@@ -361,7 +388,6 @@ public class PathFinder {
                 closestIDX = i;
             }
 		}
-        
         return closestIDX;
     }
 	

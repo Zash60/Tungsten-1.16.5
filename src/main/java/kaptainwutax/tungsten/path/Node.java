@@ -2,9 +2,12 @@ package kaptainwutax.tungsten.path;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.render.Color;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldView;
 
@@ -49,18 +52,18 @@ public class Node {
 		int i;
 
 
-		for(i = 0; i < 4 && n != null; i++) {
-			if(n.agent.blockX != this.agent.blockX || n.agent.blockY != this.agent.blockY || n.agent.blockZ != this.agent.blockZ) {
-				mismatch = true;
-				break;
-			}
-
-			n = n.parent;
-		}
-		if(!mismatch && i == 5) {
-			return new ArrayList<>();
-		}
-		if(n != null && n.agent.isInLava() || this.agent.isInLava() || this.agent.fallDistance > 4 && !this.agent.slimeBounce&& !this.agent.touchingWater) return new ArrayList<>();
+//		for(i = 0; i < 4 && n != null; i++) {
+//			if(n.agent.blockX != this.agent.blockX || n.agent.blockY != this.agent.blockY || n.agent.blockZ != this.agent.blockZ) {
+//				mismatch = true;
+//				break;
+//			}
+//
+//			n = n.parent;
+//		}
+//		if(!mismatch && i == 5) {
+//			return new ArrayList<>();
+//		}
+		if(n != null && n.agent.isInLava() || this.agent.isInLava() || this.agent.fallDistance > 3 && !this.agent.slimeBounce&& !this.agent.touchingWater) return new ArrayList<>();
 
 
 		if(this.agent.onGround || this.agent.touchingWater) {
@@ -175,8 +178,9 @@ public class Node {
 //						}
 //					}
 //				}
+				ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 				Node newNode = new Node(this, world, new PathInput(true, false, false, false, false,
-						false, true, this.agent.pitch, this.agent.yaw), new Color(0, 255, 255), this.cost + 1);
+						false, player.getHungerManager().getFoodLevel() > 6, this.agent.pitch, this.agent.yaw), new Color(0, 255, 255), this.cost + 1);
 				nodes.add(newNode);
 			} catch (java.util.ConcurrentModificationException e) {
 				try {
