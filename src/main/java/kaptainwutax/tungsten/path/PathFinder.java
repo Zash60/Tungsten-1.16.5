@@ -119,7 +119,7 @@ public class PathFinder {
 					return;
 				}
 			} 
-			if ((numNodesConsidured & (timeCheckInterval - 1)) == 0 && NEXT_CLOSEST_BLOCKNODE_IDX > blockPath.get().size() - 2 && !TungstenMod.EXECUTOR.isRunning() && blockPath.get().getLast().getPos().squaredDistanceTo(next.agent.getPos()) < 3.0D && blockPath.get().getLast().getPos().squaredDistanceTo(target) > 1.0D ) {
+			if ((numNodesConsidured & (timeCheckInterval - 1)) == 0 && NEXT_CLOSEST_BLOCKNODE_IDX > blockPath.get().size() - 10 && !TungstenMod.EXECUTOR.isRunning() && blockPath.get().getLast().getPos().squaredDistanceTo(next.agent.getPos()) < 3.0D && blockPath.get().getLast().getPos().squaredDistanceTo(target) > 1.0D ) {
         			numNodesConsidured = 0;
 //	        		if (next.agent.onGround) {
 	        			Node n = next;
@@ -348,7 +348,7 @@ public class PathFinder {
 	    	int closestPosIDX = findClosestPositionIDX(world, new BlockPos(child.agent.blockX, child.agent.blockY, child.agent.blockZ), blockPath);
 	    	BlockNode closestPos = blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX);
 //	    	if (closestPosIDX+1 - NEXT_CLOSEST_BLOCKNODE_IDX <= 2) {
-		    	if (closestPosIDX+1 > NEXT_CLOSEST_BLOCKNODE_IDX && closestPosIDX +1 < blockPath.size() && child.agent.getPos().distanceTo(blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX).getPos()) < 0.52) {
+		    	if (closestPosIDX+1 > NEXT_CLOSEST_BLOCKNODE_IDX && closestPosIDX +1 < blockPath.size() && child.agent.getPos().distanceTo(blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX).getPos()) < 0.8) {
 		    		NEXT_CLOSEST_BLOCKNODE_IDX = closestPosIDX+1;
 			    	closestPos = blockPath.get(closestPosIDX+1);
 		    	}

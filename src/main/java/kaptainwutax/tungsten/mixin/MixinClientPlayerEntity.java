@@ -1,6 +1,8 @@
 package kaptainwutax.tungsten.mixin;
 
 import com.mojang.authlib.GameProfile;
+
+import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.path.PathFinder;
@@ -50,10 +52,22 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 		if(TungstenMod.runBlockSearchKeyBinding.isPressed() && !TungstenMod.PATHFINDER.active) {
 			BlockSpacePathFinder.find(getWorld(), TungstenMod.TARGET);
 		}
-		if (TungstenMod.pauseKeyBinding.isPressed() && TungstenMod.PATHFINDER.thread != null && TungstenMod.PATHFINDER.thread.isAlive()) {
-			TungstenMod.PATHFINDER.thread.interrupt();
-			TungstenMod.RENDERERS.clear();
-			TungstenMod.TEST.clear();
+		
+		try {
+			
+        	if(TungstenMod.pauseKeyBinding.isPressed() && (TungstenMod.PATHFINDER.active || TungstenMod.EXECUTOR.isRunning())) {
+        		TungstenMod.PATHFINDER.stop = true;
+        		TungstenMod.EXECUTOR.stop = true;
+        		if (TungstenMod.PATHFINDER.thread != null && TungstenMod.PATHFINDER.thread.isAlive()) {
+        			TungstenMod.PATHFINDER.thread.interrupt();
+        			TungstenMod.RENDERERS.clear();
+        			TungstenMod.TEST.clear();
+        		}
+				Debug.logMessage("Stopped!");
+    		}
+
+		} catch (Exception e) {
+			// TODO: handle exception
 		}
 		
 		if (TungstenMod.createGoalKeyBinding.isPressed()) {

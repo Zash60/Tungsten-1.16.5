@@ -80,6 +80,7 @@ public class Node {
 //											for (float yaw : yawValues) {
 										for (float yaw = -180.0f; yaw < 180.0f; yaw += 22.5) {
 											for (boolean sprint : new boolean[]{true, false}) {
+												if ((sneak || ((right || left) && !forward)) && sprint) continue;
 												for (boolean jump : new boolean[]{true, false}) {
 													try {
 														double addNodeCost = 1;
@@ -135,17 +136,27 @@ public class Node {
 //				}
 			}
 			
+//			nodes.sort((n1, n2) -> {
+//				
+//				double desiredYaw = PathFinder.calcYawFromVec3d(this.agent.getPos(), target);
+//				
+//				if (n1.agent.yaw - desiredYaw < 60 && n2.agent.yaw - desiredYaw < 60) {
+//					return 0;
+//				} else if (n1.agent.yaw - desiredYaw < 60) {
+//					return -1;
+//				}
+//				return 1;
+//				
+//			});
+			
 			nodes.sort((n1, n2) -> {
-				
 				double desiredYaw = PathFinder.calcYawFromVec3d(this.agent.getPos(), target);
-				
-				if (n1.agent.yaw - desiredYaw < 60 && n2.agent.yaw - desiredYaw < 60) {
-					return 0;
-				} else if (n1.agent.yaw - desiredYaw < 60) {
-					return -1;
-				}
-				return 1;
-				
+			    
+			    double diff1 = Math.abs(n1.agent.yaw - desiredYaw);
+			    double diff2 = Math.abs(n2.agent.yaw - desiredYaw);
+			    
+			    // Compare the absolute differences
+			    return Double.compare(diff1, diff2);
 			});
 
 			return nodes;
@@ -180,7 +191,7 @@ public class Node {
 //				}
 				ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 				Node newNode = new Node(this, world, new PathInput(true, false, false, false, false,
-						false, player.getHungerManager().getFoodLevel() > 6, this.agent.pitch, this.agent.yaw), new Color(0, 255, 255), this.cost + 1);
+						false, player.getHungerManager().getFoodLevel() > 6, this.agent.pitch, this.agent.yaw), new Color(0, 255, 255), this.cost + 100000);
 				nodes.add(newNode);
 			} catch (java.util.ConcurrentModificationException e) {
 				try {

@@ -7,12 +7,14 @@ import java.util.List;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import kaptainwutax.tungsten.render.Color;
+import kaptainwutax.tungsten.render.Cube;
 import kaptainwutax.tungsten.render.Cuboid;
 import kaptainwutax.tungsten.world.BetterBlockPos;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CarpetBlock;
 import net.minecraft.block.DaylightDetectorBlock;
+import net.minecraft.block.FenceBlock;
 import net.minecraft.block.LadderBlock;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.LilyPadBlock;
@@ -23,7 +25,9 @@ import net.minecraft.block.StairsBlock;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.ai.pathing.PathNode;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.fluid.LavaFluid;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -280,16 +284,22 @@ public class BlockNode {
     
     private static boolean isObscured(WorldView world, BlockPos pos) {
     	return ((world.getBlockState(pos).isFullCube(world, pos)
+    			|| world.getBlockState(pos).getBlock() instanceof SlabBlock
+    			|| world.getBlockState(pos).getBlock() instanceof FenceBlock
+    			|| world.getBlockState(pos.up()).getBlock() instanceof FenceBlock
     			|| world.getBlockState(pos).getBlock() instanceof LeavesBlock) && !hasBiggerCollisionShapeThanAbove(world, pos) || 
-				hasBiggerCollisionShapeThanAbove(world, pos) ) 
-		&& !(world.getBlockState(pos).getBlock() instanceof SlabBlock)
+				hasBiggerCollisionShapeThanAbove(world, pos)) 
+//		&& !(world.getBlockState(pos).getBlock() instanceof SlabBlock)
 		&& !(world.getBlockState(pos).getBlock() instanceof CarpetBlock)
 		&& !(world.getBlockState(pos).getBlock() instanceof DaylightDetectorBlock)
+		&& !(world.getBlockState(pos).getBlock()  == Blocks.LAVA )
 		|| (world.getBlockState(pos.up()).isFullCube(world, pos.up())
+    			|| world.getBlockState(pos.up()).getBlock() instanceof SlabBlock
 				|| (world.getBlockState(pos.up()).getBlock() instanceof LeavesBlock)) 
-		&& !(world.getBlockState(pos.up()).getBlock() instanceof SlabBlock)
+//		&& !(world.getBlockState(pos.up()).getBlock() instanceof SlabBlock)
 		&& !(world.getBlockState(pos.up()).getBlock() instanceof CarpetBlock)
-		&& !(world.getBlockState(pos.up()).getBlock() instanceof DaylightDetectorBlock);
+		&& !(world.getBlockState(pos.up()).getBlock() instanceof DaylightDetectorBlock)
+		&& !(world.getBlockState(pos).getBlock()  == Blocks.LAVA );
     }
     
     public static boolean hasBiggerCollisionShapeThanAbove(WorldView world, BlockPos pos) {
@@ -396,19 +406,29 @@ public class BlockNode {
 				|| world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.FLOWING_WATER))
 				&& wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
 //		if(previous != null && previous.y-y < 1 && wasOnSlime || !wasOnSlime && child.y - y > 1) return true;
-		if (!wasOnSlime && heightDiff > 0 && getPos().distanceTo(child.getPos()) >= 5) return true;
+		if (getPos().distanceTo(child.getPos()) >= 7) return true;
+		if (!wasOnSlime && heightDiff >= 2 && getPos().distanceTo(child.getPos()) >= 7) return true;
+		if (!wasOnSlime && heightDiff > 0 && heightDiff < 1 && getPos().distanceTo(child.getPos()) >= 6.3) return true;
+		if (!wasOnSlime && heightDiff < 0 && getPos().distanceTo(child.getPos()) >= 5) return true;
+		if (!wasOnSlime && heightDiff <= 0 && (
+				(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
+				 && world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
+				|| 
+				world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LadderBlock)
+				 && getPos().distanceTo(child.getPos()) >= 1) return true;
+		if (heightDiff <= 0 && getPos().distanceTo(child.getPos()) >= 6) return true;
 		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
 		if (world.getBlockState(child.getBlockPos()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
 		
 		if(world.getBlockState(child.getBlockPos().down()).isAir()
 				&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock)) return true;
-		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
-				&& world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) return true;
-		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SeaPickleBlock) return true;
-		if (world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
-				&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) {
-			if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos())) return true;
-		}
+//		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
+//				&& world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) return true;
+//		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SeaPickleBlock) return true;
+//		if (world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
+//				&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) {
+//			if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos())) return true;
+//		}
 		else 
 			if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos().down()) 
 				&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock)) return true;

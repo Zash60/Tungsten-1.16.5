@@ -59,7 +59,7 @@ public class BlockSpacePathFinder {
         int numNodes = 0;
         int timeCheckInterval = 1 << 6;
         long startTime = System.currentTimeMillis();
-        long primaryTimeoutTime = startTime + 5000020L;
+        long primaryTimeoutTime = startTime + 600L;
 		
 		TungstenMod.RENDERERS.clear();
 		Debug.logMessage("Searchin...");
@@ -188,7 +188,7 @@ public class BlockSpacePathFinder {
 	
 	private static double computeHeuristic(Vec3d position, Vec3d target) {
 	    double dx = position.x - target.x;
-	    double dy = (position.y - target.y)*5;
+	    double dy = (position.y - target.y)*10;
 	    double dz = position.z - target.z;
 	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 80;
 	}
