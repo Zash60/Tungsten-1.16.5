@@ -95,6 +95,12 @@ public class Node {
 														if (this.agent.isSubmergedInWater) {
 															for (float pitch = -90.0f; pitch < 90.0f; pitch += 45) {
 																Node newNode = new Node(this, world, new PathInput(forward, false, right, left, jump, sneak, sprint, pitch, yaw), new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
+																if (!jump) {
+																	for (int j = 0; j < 35; j++) {
+																		newNode = new Node(newNode, world, new PathInput(forward, false, right, left, false,
+																				sneak, sprint, this.agent.pitch, yaw), new Color(0, 255, 255), this.cost + addNodeCost);
+																	}
+																}
 																newNode.cost += newNode.agent.isSubmergedInWater || this.agent.touchingWater ? 50 : 0;
 																nodes.add(newNode);
 															}
@@ -188,7 +194,7 @@ public class Node {
 
 				for (float yaw = this.agent.yaw - 45; yaw < 180.0f; yaw += 22.5) {
 					for (boolean right : new boolean[]{false, true}) {
-						while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) && this.agent.getPos().y - newNode.agent.getPos().y < 5) {
+						while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) && this.agent.getPos().y - newNode.agent.getPos().y < 8) {
 								if (TungstenMod.PATHFINDER.stop) return nodes;
 								newNode = new Node(newNode, world, new PathInput(true, false, right, false, false,
 										false, true, this.agent.pitch, yaw), new Color(0, 255, 255), this.cost + jumpCost);

@@ -5,11 +5,13 @@ import java.util.Iterator;
 import java.util.List;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.helpers.blockPath.BlockPosShifter;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cube;
 import kaptainwutax.tungsten.render.Cuboid;
 import kaptainwutax.tungsten.world.BetterBlockPos;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CarpetBlock;
@@ -23,6 +25,7 @@ import net.minecraft.block.SeaPickleBlock;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.SlimeBlock;
 import net.minecraft.block.StairsBlock;
+import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.ai.pathing.PathNode;
@@ -31,6 +34,7 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.fluid.LavaFluid;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.WorldView;
@@ -69,6 +73,8 @@ public class BlockNode {
     
     private boolean wasOnSlime;
     private boolean wasOnLadder;
+    private boolean isDoingNeo = false;
+    private Direction neoSide;
 
     /**
      * Where is this node in the array flattenization of the binary heap? Needed for decrease-key operations.
@@ -135,7 +141,12 @@ public class BlockNode {
     }
     
     public Vec3d getPos() {
-    	return new Vec3d(x, y, z);
+    	return getPos(false);
+    }
+    
+    public Vec3d getPos(boolean shift) {
+    	if (shift && isDoingNeo) return BlockPosShifter.shiftForStraightNeo(this, neoSide);
+    	return new Vec3d(x+0.5, y, z+0.5);
     }
     
     public BlockPos getBlockPos() {
@@ -180,7 +191,11 @@ public class BlockNode {
 		
     }
     
-    public boolean wasCleared(WorldView world, BlockPos start, BlockPos end) { 
+    public static boolean wasCleared(WorldView world, BlockPos start, BlockPos end) {
+    	return wasCleared(world, start, end, null, null);
+    }
+    
+    public static boolean wasCleared(WorldView world, BlockPos start, BlockPos end, BlockNode startNode, BlockNode endNode) { 
 		int x1 = start.getX();
 	    int y1 = start.getY();
 	    int z1 = start.getZ();
@@ -191,12 +206,6 @@ public class BlockNode {
 	    
 	    boolean isJumpingOneBlock = y2-y1 == 1;
 		TungstenMod.TEST.clear();
-//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
-//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
-//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
-//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2),
-//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 		BlockPos.Mutable currPos = new BlockPos.Mutable();
 		int x = x1;
         int y = isJumpingOneBlock ? y1+1 : y1;
@@ -204,8 +213,14 @@ public class BlockNode {
         
         boolean isMovingOnXAxis = x1-x2 == 0;
         boolean isMovingOnZAxis = z1-z2 == 0;
-        boolean shouldCheckNeo = !isJumpingOneBlock && start.isWithinDistance(end, 3);
+        boolean shouldCheckNeo = start.isWithinDistance(end, 4.2);
 //      boolean shouldCheckNeo = false;
+      boolean shouldRender = false;
+      boolean shouldSlow = false;
+      if (shouldSlow) {
+		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
+		TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
+      }
 
         while (x != x2 || y != y2 || z != z2) {
         	if (TungstenMod.PATHFINDER.stop) return false;
@@ -213,20 +228,27 @@ public class BlockNode {
             
             currPos.set(x, y, z);
         	if (isJumpingOneBlock && world.getBlockState(currPos.down()).getBlock() instanceof FenceBlock) return false;
-            if (isObscured(world, currPos)) {
+        	if (isJumpingOneBlock && world.getBlockState(currPos).getBlock() instanceof SlabBlock) return false;
+            if (isObscured(world, currPos, isJumpingOneBlock)) {
             	if (shouldCheckNeo) {
-	            	if (!isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, x2, z2)){
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-	//					try {
-	//						Thread.sleep(450);
-	//					} catch (InterruptedException ignored) {}				
+	            	if (!isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, start, end, isJumpingOneBlock, endNode)){
+	            		if (shouldRender) {
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	            		}
 						return false;
 					}
-            	}
+            	} else return false;
 			} else {
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				if (shouldRender) {
+					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				}
 			}
             
             if (z < z2) {
@@ -234,23 +256,28 @@ public class BlockNode {
             } else if (z > z2) {
                 z--;
             }
-    		TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 
             currPos.set(x, y, z);
-            if (isObscured(world, currPos)) {
+            if (isObscured(world, currPos, isJumpingOneBlock)) {
             	if (shouldCheckNeo) {
-	            	if (!isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, x2, z2)){
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-	//					try {
-	//						Thread.sleep(450);
-	//					} catch (InterruptedException ignored) {}				
+	            	if (!isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, start, end, isJumpingOneBlock, endNode)){
+	            		if (shouldRender) {
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	            		}
 						return false;
 					}
-            	}
+            	} else return false;
 			} else {
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				if (shouldRender) {
+					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				}
 			}
 //        }
             if (x < x2) {
@@ -258,23 +285,28 @@ public class BlockNode {
             } else if (x > x2) {
                 x--;
             }
-//    		TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
             currPos.set(x, y, z);
 
-            if (isObscured(world, currPos)) {
+            if (isObscured(world, currPos, isJumpingOneBlock)) {
             	if (shouldCheckNeo) {
-	            	if (!isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, x2, z2)){
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-	//					try {
-	//						Thread.sleep(450);
-	//					} catch (InterruptedException ignored) {}				
+	            	if (!isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, start, end, isJumpingOneBlock, endNode)){
+	            		if (shouldRender) {
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	            		}
 						return false;
 					}
-            	}
+            	} else return false;
 			} else {
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				if (shouldRender) {
+					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				}
 			}
 
             if (y < y2) {
@@ -282,123 +314,399 @@ public class BlockNode {
             } else if (y > y2) {
                 y--;
             }
-//    		TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
             currPos.set(x, y, z);
             
-            if (isObscured(world, currPos)) {
+            if (isObscured(world, currPos, isJumpingOneBlock)) {
             	if (shouldCheckNeo) {
-	            	if (!isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, x2, z2)){
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-	//					try {
-	//						Thread.sleep(450);
-	//					} catch (InterruptedException ignored) {}				
+	            	if (!isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, start, end, isJumpingOneBlock, endNode)){
+	            		if (shouldRender) {
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	            		}
 						return false;
 					}
-            	}
+            	} else return false;
 			} else {
-				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-				TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				if (shouldRender) {
+					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				}
 			}
         }
-//		try {
-//		Thread.sleep(250);
-//	} catch (InterruptedException ignored) {}
+		if (shouldSlow) {
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException ignored) {}
+		}
 
 		return true;
 	}
     
-    private static boolean isNeoPossible(WorldView world, boolean isMovingOnXAxis, boolean isMovingOnZAxis, int x, int y, int z, int endX, int endZ) {
+    private static boolean isNeoPossible(WorldView world, boolean isMovingOnXAxis, boolean isMovingOnZAxis, int x, int y, int z, BlockPos startPos, BlockPos endPos, boolean isJumpingOneBlock) {
+    	return isNeoPossible(world, isMovingOnXAxis, isMovingOnZAxis, x, y, z, startPos, endPos, isJumpingOneBlock, null);
+    }
+    
+    private static boolean isNeoPossible(WorldView world, boolean isMovingOnXAxis, boolean isMovingOnZAxis, int x, int y, int z, BlockPos startPos, BlockPos endPos, boolean isJumpingOneBlock, BlockNode node) {
+    	int endX = endPos.getX();
+    	int endY = endPos.getY();
+    	int endZ = endPos.getZ();
+        boolean shouldRender = false;
+        boolean shouldSlow = false;
     	BlockPos.Mutable currPos = new BlockPos.Mutable();
+    	int count = 0;
     	if (isMovingOnXAxis) {
-        	int neoX = x+1;
-        	int currZ = endZ > z ? z-1 : z+1;
-        	while (currZ != endZ) {
-        		if (TungstenMod.PATHFINDER.stop) return false;
-            	currPos.set(neoX, y-1, currZ);
-            	if (!world.getBlockState(currPos).isAir()) return false;
-            	if (z < endZ) {
-            		currZ++;
-                } else if (z > endZ) {
-                	currZ--;
-                }
-            	currPos.set(neoX, y, currZ);
-            	if (isObscured(world, currPos)) {
-    				TungstenMod.TEST.add(new Cuboid(new Vec3d(neoX, y, currZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-    				TungstenMod.TEST.add(new Cuboid(new Vec3d(neoX, y+1, currZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-//    				try {
-//    					Thread.sleep(450);
-//    				} catch (InterruptedException ignored) {}
-    				return false;
-    			} else {
-    				TungstenMod.TEST.add(new Cuboid(new Vec3d(neoX, y, currZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-    				TungstenMod.TEST.add(new Cuboid(new Vec3d(neoX, y+1, currZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//    				try {
-//    					Thread.sleep(450);
-//    				} catch (InterruptedException ignored) {}
-    			}
+        	if (world.getBlockState(startPos).getBlock() instanceof LadderBlock
+        			|| world.getBlockState(startPos.down()).getBlock() instanceof LadderBlock
+        			|| isOpenTrapdoor(world.getBlockState(startPos.down()))) {
+        		return false;
         	}
+        	if (startPos.getZ() > endZ) {
+	        	// West
+	        	boolean isWestPossible = true;
+	        	int neoX = x-1;
+	        	int currZ = endZ > z ? z-1 : z+1;
+	        	while (currZ != endZ) {
+	        		if (TungstenMod.PATHFINDER.stop) return false;
+	        		if (count > 3) return false;
+	        		count++;
+	            	currPos.set(neoX, y-1, currZ);
+	            	if (!world.getBlockState(currPos).isAir()) return false;
+	            	if (z < endZ) {
+	            		currZ++;
+	                } else if (z > endZ) {
+	                	currZ--;
+	                }
+	            	currPos.set(neoX, y, currZ);
+	            	if (isObscured(world, currPos, isJumpingOneBlock)) {
+	            		if (shouldRender) {
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	            		}
+	            		isWestPossible = false;
+	    			} else {
+	    				if (shouldRender) {
+	    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+	    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	    				}
+	    			}
+	        	}
+	        	if (node != null && !node.isDoingNeo) {
+		        	if (isWestPossible) {
+		        		node.isDoingNeo = true;
+		        		node.neoSide = Direction.WEST;
+		        		return true;
+		        	}
+		        	return false;
+	        	}
+    		}
+        	if (startPos.getZ() < endZ) {
+        		count = 0;
+	        	// East
+	        	boolean isEastPossible = true;
+	        	int neoX = x+1;
+	        	int currZ = endZ > z ? z-1 : z+1;
+	        	while (currZ != endZ) {
+	        		if (TungstenMod.PATHFINDER.stop) return false;
+	        		if (count > 3) return false;
+	        		count++;
+	            	currPos.set(neoX, y-1, currZ);
+	            	if (!world.getBlockState(currPos).isAir()) return false;
+	            	if (z < endZ) {
+	            		currZ++;
+	                } else if (z > endZ) {
+	                	currZ--;
+	                }
+	            	currPos.set(neoX, y, currZ);
+	            	if (isObscured(world, currPos, isJumpingOneBlock)) {
+	            		if (shouldRender) {
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	            		}
+	            		isEastPossible = false;
+	    			} else {
+	    				if (shouldRender) {
+	    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+	    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	    				}
+	    			}
+	        	}
+	        	if (node != null && !node.isDoingNeo) {
+		        	if (isEastPossible) {
+		        		node.isDoingNeo = true;
+		        		node.neoSide = Direction.EAST;
+		        		return true;
+		        	}
+		        	return false;
+	        	}
+    		}
         } else if (isMovingOnZAxis) {
-        	int neoZ = z+1;
-        	int currX =  endX > x ? x-1 : x+1;
-        	while (currX != endX) {
-        		if (TungstenMod.PATHFINDER.stop) return false;
-            	currPos.set(currX, y-1, neoZ);
-            	if (!world.getBlockState(currPos).isAir()) return false;
-            	if (x < endX) {
-            		currX++;
-                } else if (x > endX) {
-                	currX--;
-                }
-            	currPos.set(currX, y, neoZ);
-            	if (isObscured(world, currPos)) {
-    				TungstenMod.TEST.add(new Cuboid(new Vec3d(currX, y, neoZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-    				TungstenMod.TEST.add(new Cuboid(new Vec3d(currX, y+1, neoZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-//    				try {
-//    					Thread.sleep(450);
-//    				} catch (InterruptedException ignored) {}
-    				return false;
-    			} else {
-    				TungstenMod.TEST.add(new Cuboid(new Vec3d(currX, y, neoZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-    				TungstenMod.TEST.add(new Cuboid(new Vec3d(currX, y+1, neoZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//    				try {
-//    					Thread.sleep(450);
-//    				} catch (InterruptedException ignored) {}
-    			}
-        		break;
+        	if (world.getBlockState(startPos).getBlock() instanceof LadderBlock
+        			|| world.getBlockState(startPos.down()).getBlock() instanceof LadderBlock
+        			|| isOpenTrapdoor(world.getBlockState(startPos.down()))) {
+        		return false;
         	}
-        }
+        	if (startPos.getX() < endX) {
+        		// South
+	        	boolean isSouthPossible = true;
+	        	int neoZ = z+1;
+	        	int currX =  endX > x ? x-1 : x+1;
+	        	while (currX != endX) {
+	        		if (TungstenMod.PATHFINDER.stop) return false;
+	        		if (count > 3) return false;
+	        		count++;
+	            	currPos.set(currX, y-1, neoZ);
+	            	if (!world.getBlockState(currPos).isAir()) {
+	            		isSouthPossible = false;
+	            		break;
+	            	}
+	            	if (x < endX) {
+	            		currX++;
+	                } else if (x > endX) {
+	                	currX--;
+	                }
+	            	currPos.set(currX, y, neoZ);
+	            	if (isObscured(world, currPos, isJumpingOneBlock)) {
+	            		if (shouldRender) {
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	            		}
+	            		isSouthPossible = false;
+	            		break;
+	    			} else {
+	    				if (shouldRender) {
+	    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+	    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	    				}
+	    			}
+	        	}
+	        	if (node != null && !node.isDoingNeo) {
+		        	if (isSouthPossible) {
+		        		node.isDoingNeo = true;
+		        		node.neoSide = Direction.SOUTH;
+		        		return true;
+		        	}
+		        	return false;
+	        	}
+	        	
+        	}
+        	if (startPos.getX() > endX) {
+        		count = 0;
+	        	// North
+	        	boolean isNorthSidePossible = true;
+	        	int neoZ = z-1;
+	        	int currX =  endX > x ? x-1 : x+1;
+	        	while (currX != endX) {
+	        		if (TungstenMod.PATHFINDER.stop) return false;
+	        		if (count > 3) return false;
+	        		count++;
+	            	currPos.set(currX, y-1, neoZ);
+	            	if (!world.getBlockState(currPos).isAir()) {
+	            		isNorthSidePossible = false;
+	            		break;
+	            	}
+	            	if (x < endX) {
+	            		currX++;
+	                } else if (x > endX) {
+	                	currX--;
+	                }
+	            	currPos.set(currX, y, neoZ);
+	            	if (isObscured(world, currPos, isJumpingOneBlock)) {
+	            		if (shouldRender) {
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	            		}
+	            		isNorthSidePossible = false;
+	            		break;
+	    			} else {
+	    				if (shouldRender) {
+	    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+	    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+							if (shouldSlow) {
+								try {
+									Thread.sleep(450);
+								} catch (InterruptedException ignored) {}
+							}
+	    				}
+	    			}
+	        	}
+	        	if (node != null && !node.isDoingNeo) {
+		        	if (isNorthSidePossible) {
+		        		node.isDoingNeo = true;
+		        		node.neoSide = Direction.NORTH;
+		            	return true;
+		        	}
+		        	return false;
+	        	}
+        	}
+        } else {
+        	while (x != endX || y != endY || z != endZ) {
+            	if (TungstenMod.PATHFINDER.stop) return false;
+                
+                
+//                currPos.set(x, y, z);
+//                if (isObscured(world, currPos, isJumpingOneBlock)) {
+//            		if (shouldRender) {
+//						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+//						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+//						if (shouldSlow) {
+//							try {
+//								Thread.sleep(450);
+//							} catch (InterruptedException ignored) {}
+//						}
+//            		}
+//					return false;
+//    			} else {
+//    				if (shouldRender) {
+//    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//    				}
+//    			}
+                if (x < endX) {
+                    x++;
+                } else if (x > endX) {
+                    x--;
+                }
+
+                currPos.set(x, y, z);
+                if (isObscured(world, currPos, isJumpingOneBlock)) {
+            		if (shouldRender) {
+						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+						if (shouldSlow) {
+							try {
+								Thread.sleep(450);
+							} catch (InterruptedException ignored) {}
+						}
+            		}
+					return false;
+    			} else {
+    				if (shouldRender) {
+    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+    				}
+    			}
+                
+                if (z < endZ) {
+                    z++;
+                } else if (z > endZ) {
+                    z--;
+                }
+                currPos.set(x, y, z);
+
+                if (isObscured(world, currPos, isJumpingOneBlock)) {
+                	if (shouldRender) {
+						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+						if (shouldSlow) {
+							try {
+								Thread.sleep(450);
+							} catch (InterruptedException ignored) {}
+						}
+            		}
+					return false;
+    			} else {
+    				if (shouldRender) {
+    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+    				}
+    			}
+
+                if (y < endY) {
+                    y++;
+                } else if (y > endY) {
+                    y--;
+                }
+                currPos.set(x, y, z);
+                
+                if (isObscured(world, currPos, isJumpingOneBlock)) {
+                	if (shouldRender) {
+						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+						if (shouldSlow) {
+							try {
+								Thread.sleep(450);
+							} catch (InterruptedException ignored) {}
+						}
+            		}
+					return false;
+    			} else {
+    				if (shouldRender) {
+    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+    				}
+    			}
+            }
+    		if (shouldSlow) {
+    			try {
+    				Thread.sleep(50);
+    			} catch (InterruptedException ignored) {}
+    		}
+    	}
+    	
     	return true;
     }
     
-    private static boolean isObscured(WorldView world, BlockPos pos) {
-    	if(world.getBlockState(pos).getCollisionShape(world, pos).getBoundingBoxes().stream()
-                .mapToDouble(box -> (box.maxX - box.minX) * (box.maxZ - box.minZ))
-                .sum() > 0) {
-//				TungstenMod.TEST.add(new Cuboid(new Vec3d(pos.getX(), pos.getY(), pos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), new Color(125, 85, 150)));
-//				try {
-//					Thread.sleep(450);
-//				} catch (InterruptedException ignored) {}
-				
-			}
+    private static boolean isObscured(WorldView world, BlockPos pos, boolean isJumpingUp) {
     	return ((world.getBlockState(pos).isFullCube(world, pos)
-    			|| world.getBlockState(pos).getBlock() instanceof SlabBlock
-//    			|| world.getBlockState(pos).getBlock() instanceof LeavesBlock
+    			|| (world.getBlockState(pos).getBlock() instanceof SlabBlock && !isJumpingUp)
+    			|| world.getBlockState(pos).getBlock() instanceof LeavesBlock
     			) 
-    			&& !hasBiggerCollisionShapeThanAbove(world, pos) 
+    			&& (!hasBiggerCollisionShapeThanAbove(world, pos) && !isJumpingUp)
     			|| hasBiggerCollisionShapeThanAbove(world, pos)
 				) 
-//		&& !(world.getBlockState(pos).getBlock() instanceof SlabBlock)
+		&& !(world.getBlockState(pos).getBlock() instanceof SlabBlock)
 		&& !(world.getBlockState(pos).getBlock() instanceof CarpetBlock)
 		&& !(world.getBlockState(pos).getBlock() instanceof DaylightDetectorBlock)
 		&& !(world.getBlockState(pos).getBlock()  == Blocks.LAVA )
 		|| (world.getBlockState(pos.up()).isFullCube(world, pos.up())
     			|| world.getBlockState(pos.up()).getBlock() instanceof SlabBlock
-				|| (world.getBlockState(pos.up()).getBlock() instanceof LeavesBlock)) 
+				|| (world.getBlockState(pos.up()).getBlock() instanceof LeavesBlock)
+				) 
 //		&& !(world.getBlockState(pos.up()).getBlock() instanceof SlabBlock)
 		&& !(world.getBlockState(pos.up()).getBlock() instanceof CarpetBlock)
-		&& !(world.getBlockState(pos.up()).getBlock() instanceof DaylightDetectorBlock)
-		&& !(world.getBlockState(pos).getBlock()  == Blocks.LAVA );
+//		&& !(world.getBlockState(pos.up()).getBlock() instanceof DaylightDetectorBlock)
+		&& !(world.getBlockState(pos).getBlock()  == Blocks.LAVA )
+		;
     }
     
     public static boolean hasBiggerCollisionShapeThanAbove(WorldView world, BlockPos pos) {
@@ -502,95 +810,155 @@ public class BlockNode {
     
     private boolean shouldRemoveNode(WorldView world, BlockNode child) {
     	if (TungstenMod.PATHFINDER.stop) return true;
+    	
+    	BlockState childState = world.getBlockState(child.getBlockPos());
+        BlockState childBelowState = world.getBlockState(child.getBlockPos().down());
+        Block childBlock = childState.getBlock();
+        Block childBelowBlock = childBelowState.getBlock();
+        double distance = getPos().distanceTo(child.getPos());
 
-    	double heightDiff = this.y - child.y;
-////		System.out.println(heightDiff);
-		if ((world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.WATER) 
-				|| world.getBlockState(child.getBlockPos()).getFluidState().isOf(Fluids.FLOWING_WATER))
-				&& wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
-//		if(previous != null && previous.y-y < 1 && wasOnSlime || !wasOnSlime && child.y - y > 1) return true;
-		if (getPos().distanceTo(child.getPos()) >= 7) return true;
-		if (!wasOnSlime && heightDiff >= 2 && getPos().distanceTo(child.getPos()) >= 7) return true;
-		if (!wasOnSlime && heightDiff > 0 && heightDiff < 1 && getPos().distanceTo(child.getPos()) >= 6.3) return true;
-		if (!wasOnSlime && heightDiff < 0 && getPos().distanceTo(child.getPos()) >= 5) return true;
-		if (!wasOnSlime && heightDiff <= 0 && (
-				(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
-				 && world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
-				|| !wasOnLadder && world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LadderBlock
-				)
-				 && getPos().distanceTo(child.getPos()) >= 5) return true;
-		if (heightDiff <= 0 && getPos().distanceTo(child.getPos()) >= 6) return true;
-		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
-		if (world.getBlockState(child.getBlockPos()).getBlock() instanceof LadderBlock && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
-		
-		if(world.getBlockState(child.getBlockPos().down()).isAir()
-				&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock)) return true;
-//		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SlabBlock
-//				&& world.getBlockState(child.getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) return true;
-//		if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof SeaPickleBlock) return true;
-//		if (world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
-//				&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM) {
-//			if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos())) return true;
-//		}
-		else 
-			if(!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos().down()) 
-				&& !(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock)) return true;
-		if(world.getBlockState(child.getBlockPos()).isOf(Blocks.LAVA)) return true;
-////		if(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock) return true;
-////		if(world.getBlockState(child.getBlockPos()).getBlock() instanceof CarpetBlock) return false;
-		if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof LilyPadBlock) return true;
-		if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof CarpetBlock) return true;
-		if(world.getBlockState(child.getBlockPos().down()).getBlock() instanceof DaylightDetectorBlock) return true;
-		if(world.getBlockState(child.getBlockPos()).getBlock() instanceof StairsBlock) return true;
-		
-		VoxelShape blockShape = world.getBlockState(child.getBlockPos().down()).getCollisionShape(world, child.getBlockPos().down());
-		VoxelShape previousBlockShape = world.getBlockState(getBlockPos().down()).getCollisionShape(world, getBlockPos().down());
-		
-		if (!blockShape.isEmpty() && 
-				blockShape.getBoundingBox().maxY > 1.3
-				&& !previousBlockShape.isEmpty()
-				&& previousBlockShape.getBoundingBox().maxY < 1.3
-				&& previousBlockShape.getBoundingBox().maxY > 0.5
-				&& (heightDiff > 0
-				&& getPos().distanceTo(child.getPos()) > 4 )) return true;
-		
-		
-		if(world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
-				&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM
-				&& heightDiff > 0
-				&& (world.getBlockState(getBlockPos().down()).getBlock() instanceof SlabBlock
-				&& world.getBlockState(getBlockPos().down()).get(Properties.SLAB_TYPE) != SlabType.BOTTOM
-				|| world.getBlockState(getBlockPos()).getBlock() instanceof SlabBlock
-				&& world.getBlockState(getBlockPos()).get(Properties.SLAB_TYPE) != SlabType.BOTTOM
-				)
-				) return true;
+        // Check for air below
+        if (childBelowState.isAir() && !(childBlock instanceof LadderBlock)) {
+            if (!(childBlock instanceof SlabBlock)) return true;
+        }
 
+        // Check for water
+        if (isWater(childState) && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
 
-		if(!blockShape.isEmpty() && 
-				blockShape.getBoundingBox().maxY > 1.3
-				&& y - child.y < 0
-				&& !(world.getBlockState(getBlockPos().down()).getBlock() instanceof SlabBlock
-				&& world.getBlockState(getBlockPos().down()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
-				&& !previousBlockShape.isEmpty() && 
-				previousBlockShape.getBoundingBox().maxY < 1.3
-				) return true;
-		if((world.getBlockState(child.getBlockPos()).getBlock() instanceof SlabBlock
-				&& world.getBlockState(child.getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM
-				||  !blockShape.isEmpty() && 
-				blockShape.getBoundingBox().maxY > 1.3)
-				&& !(world.getBlockState(getBlockPos()).getBlock() instanceof SlabBlock
-						&& world.getBlockState(getBlockPos()).get(Properties.SLAB_TYPE) == SlabType.BOTTOM)
-				&& y - child.y < 0
-				&& !previousBlockShape.isEmpty() && 
-				previousBlockShape.getBoundingBox().maxY < 1.3
-				) return true;
+        // Ladder checks
+        if ((childBelowBlock instanceof LadderBlock || childBlock instanceof LadderBlock) && wasCleared(world, getBlockPos(), child.getBlockPos())) {
+            return false;
+        }
 
+        // General height and distance checks
+        if (previous != null && (previous.y - y < 1 && wasOnSlime || (!wasOnSlime && child.y - y > 1))) return true;
+        if (distance >= 7) return true;
+
+        // Slab checks
+//        if (isBottomSlab(childBelowState)) return true;
+//        if (isBottomSlab(childState) && !hasBiggerCollisionShapeThanAbove(world, child.getBlockPos())) return true;
+
+        // Collision shape and block exceptions
+        if (!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos().down())
+                && !(childBlock instanceof DaylightDetectorBlock)
+                && !(childBlock instanceof CarpetBlock)) {
+            return true;
+        }
+
+        // Specific block checks
+        if (childState.isOf(Blocks.LAVA)) return true;
+        if (childBelowBlock instanceof LilyPadBlock) return true;
+        if (childBelowBlock instanceof CarpetBlock) return true;
+        if (childBelowBlock instanceof DaylightDetectorBlock) return true;
+        if (childBlock instanceof StairsBlock) return true;
+        if (childBelowBlock instanceof SeaPickleBlock) return true;
+
+		if (isJumpImpossible(world, child)) return true;
 		
-		if (!wasCleared(world, getBlockPos(), child.getBlockPos())) {
+		if (!wasCleared(world, getBlockPos(), child.getBlockPos(), this, child)) {
             return true;
         }
 
 		return false;
     }
+    
+    
+    public boolean isJumpImpossible(WorldView world, BlockNode child) {
+    	double heightDiff = this.y - child.y; // -1 is going up and +1 is going down, in negative y levels its reversed
+        double distance = getPos().distanceTo(child.getPos());
+        BlockState childBlockState = world.getBlockState(child.getBlockPos().down());
+        BlockState currentBlockState = world.getBlockState(getBlockPos().down());
+        Block childBlock = childBlockState.getBlock();
+        Block currentBlock = currentBlockState.getBlock();
+        
+//    	if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof TrapdoorBlock) {
+//			System.out.println(!world.getBlockState(child.getBlockPos().down()).get(Properties.OPEN));
+//    	}
+//		System.out.println(getPos().distanceTo(child.getPos()));
+//		System.out.println(heightDiff);
+
+        VoxelShape blockShape = childBlockState.getCollisionShape(world, child.getBlockPos().down());
+        VoxelShape previousBlockShape = currentBlockState.getCollisionShape(world, getBlockPos().down());
+
+        if (!wasOnSlime) {
+            // Basic height and distance checks
+            if (heightDiff == 1 && distance > 6) return true;
+            if (heightDiff >= 2 && distance > 7) return true;
+            if (heightDiff ==-2 && distance >= 6.3) return true;
+            if (heightDiff == 0 && distance >= 5.5) return true;
+            if (heightDiff < 0 && distance >= 5) return true;
+
+            // Trapdoor checks
+            if (heightDiff == 1 && isOpenTrapdoor(childBlockState) && distance > 5) return true;
+            if (heightDiff >= 2 && isOpenTrapdoor(childBlockState) && distance > 6) return true;
+
+            // Slab and ladder checks
+            if (heightDiff <= 0
+            		&& (isBottomSlab(childBlockState)
+            				|| (!wasOnLadder
+            						&& childBlock instanceof LadderBlock)
+            				)
+            		&& distance >= 6) {
+                return true;
+            }
+        }
+
+        // Large height drop
+        if (heightDiff < -1 && distance >= 6) return true;
+
+        // VoxelShape-based checks
+        if (!blockShape.isEmpty() 
+                && blockShape.getBoundingBox().maxY > 1.3 
+                && !previousBlockShape.isEmpty() 
+                && previousBlockShape.getBoundingBox().maxY < 1.3 
+                && previousBlockShape.getBoundingBox().maxY > 0.5 
+                && heightDiff > 0 
+                && distance > 4) {
+            return true;
+        }
+
+        // Bottom slab checks
+        if (isBottomSlab(world.getBlockState(getBlockPos().down())) 
+                && heightDiff < 0 
+                && !isBottomSlab(world.getBlockState(child.getBlockPos().down()))) {
+            return true;
+        }
+
+        if (!blockShape.isEmpty() 
+                && blockShape.getBoundingBox().maxY > 1.3 
+                && child.getPos().y - getPos().y < 0 
+                && !(isBottomSlab(currentBlockState))
+                && !previousBlockShape.isEmpty() 
+                && previousBlockShape.getBoundingBox().maxY < 1.3) {
+            return true;
+        }
+
+        if ((isBottomSlab(world.getBlockState(child.getBlockPos())) 
+                || (!blockShape.isEmpty() && blockShape.getBoundingBox().maxY > 1.3)) 
+                && !isBottomSlab(world.getBlockState(getBlockPos())) 
+                && child.getPos().y - getPos().y < 0 
+                && !previousBlockShape.isEmpty() 
+                && previousBlockShape.getBoundingBox().maxY < 1.3) {
+            return true;
+        }
+
+        return false;
+    }
+    
+    // Helper method to check if the block contains water
+    private static boolean isWater(BlockState state) {
+        return state.getFluidState().isOf(Fluids.WATER) || state.getFluidState().isOf(Fluids.FLOWING_WATER);
+    }
+
+    // Helper method to check if the block is an open trapdoor
+    private static boolean isOpenTrapdoor(BlockState state) {
+        return state.getBlock() instanceof TrapdoorBlock && state.get(Properties.OPEN);
+    }
+
+    // Helper method to check if the block is a bottom slab
+    private static boolean isBottomSlab(BlockState state) {
+        return state.getBlock() instanceof SlabBlock && state.get(Properties.SLAB_TYPE) == SlabType.BOTTOM;
+    }
+
 
 }

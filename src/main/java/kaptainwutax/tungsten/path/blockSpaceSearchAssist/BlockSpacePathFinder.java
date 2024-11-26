@@ -59,7 +59,7 @@ public class BlockSpacePathFinder {
         int numNodes = 0;
         int timeCheckInterval = 1 << 6;
         long startTime = System.currentTimeMillis();
-        long primaryTimeoutTime = startTime + 6000000L;
+        long primaryTimeoutTime = startTime + 8000000000L;
 		
 		TungstenMod.RENDERERS.clear();
 		Debug.logMessage("Searchin...");
@@ -89,7 +89,7 @@ public class BlockSpacePathFinder {
 			
 			closed.add(next);
 			if(TungstenMod.pauseKeyBinding.isPressed()) break;
-			if(next.getPos().squaredDistanceTo(target) <= 0.4D && !failing && next.wasCleared(world, next.previous.getBlockPos(), next.getBlockPos())) {
+			if(next.getPos().squaredDistanceTo(target) <= 0.5D && !failing && next.wasCleared(world, next.previous.getBlockPos(), next.getBlockPos())) {
 				TungstenMod.RENDERERS.clear();
 //				TungstenMod.TEST.clear();
 				BlockNode n = next;
@@ -188,14 +188,14 @@ public class BlockSpacePathFinder {
 	
 	private static double computeHeuristic(Vec3d position, Vec3d target) {
 	    double dx = position.x - target.x;
-	    double dy = (position.y - target.y)*10;
+	    double dy = (position.y - target.y)*5;
 	    double dz = position.z - target.z;
-	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 80;
+	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 20;
 	}
 	
 	private static void updateNode(BlockNode current, BlockNode child, Vec3d target) {
 	    Vec3d childPos = child.getPos();
-	    double tentativeCost = child.cost + ActionCosts.WALK_ONE_BLOCK_COST + (childPos.distanceTo(current.getPos()) > 4 ? 4000 : 0); // Assuming uniform cost for each step
+	    double tentativeCost = child.cost + ActionCosts.WALK_ONE_BLOCK_COST + (childPos.distanceTo(current.getPos()) > 4 ? 2 : 0); // Assuming uniform cost for each step
 
 	    double estimatedCostToGoal = computeHeuristic(childPos, target);
 
