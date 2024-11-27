@@ -93,13 +93,13 @@ public class Node {
 
 														if (isMoving && sprint && jump && !sneak) addNodeCost -= 0.2;
 														if (sneak) addNodeCost += 2;
-														if (this.agent.isSubmergedInWater) {
+														if (this.agent.isSubmergedInWater || this.agent.touchingWater) {
 															for (float pitch = -90.0f; pitch < 90.0f; pitch += 45) {
 																Node newNode = new Node(this, world, new PathInput(forward, false, right, left, jump, sneak, sprint, pitch, yaw), new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
 																if (!jump) {
 																	for (int j = 0; j < 35; j++) {
 																		newNode = new Node(newNode, world, new PathInput(forward, false, right, left, false,
-																				sneak, sprint, this.agent.pitch, yaw), new Color(0, 255, 255), this.cost + addNodeCost);
+																				sneak, sprint, this.agent.pitch, yaw), new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
 																	}
 																}
 																newNode.cost += newNode.agent.isSubmergedInWater || this.agent.touchingWater ? 50 : 0;
@@ -107,6 +107,15 @@ public class Node {
 															}
 														} else {
 															Node newNode = new Node(this, world, new PathInput(forward, false, right, left, jump, sneak, sprint, agent.pitch, yaw), new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
+//															if (!jump)
+																for (int j = 0; j < 2; j++) {
+																	if (newNode.agent.getPos().y < nextBlockNode.getBlockPos().getY()) break;
+																	newNode = new Node(newNode, world, new PathInput(forward, false, right, left, jump,
+																			sneak, sprint, this.agent.pitch, yaw), 
+																			jump ? new Color(0, 255, 255) : new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0)
+																			
+																			, this.cost + addNodeCost);
+																}
 															newNode.cost += newNode.agent.isSubmergedInWater || this.agent.touchingWater ? 50 : 0;
 															
 //															if (jump) {
@@ -188,28 +197,38 @@ public class Node {
 		} else {
 			List<Node> nodes = new ArrayList<Node>();
 			try {
-				long jumpCost = 8;
+				long jumpCost = 0;
 				ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 				Node newNode = new Node(this, world, new PathInput(true, false, false, false, false,
 						false, player.getHungerManager().getFoodLevel() > 6, this.agent.pitch, this.agent.yaw), new Color(0, 255, 255), this.cost + jumpCost);
 
 				for (float yaw = this.agent.yaw - 45; yaw < 180.0f; yaw += 22.5) {
-					for (boolean right : new boolean[]{false, true}) {
-						while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()) {
-								if (TungstenMod.PATHFINDER.stop) return nodes;
-								newNode = new Node(newNode, world, new PathInput(true, false, right, false, false,
-										false, true, this.agent.pitch, yaw), new Color(0, 255, 255), this.cost + jumpCost);
+					for (boolean forward : new boolean[]{true, false}) {
+						for (boolean back : new boolean[]{true, false}) {
+							System.out.println(this.agent.getPos().y - nextBlockNode.getBlockPos().getY());
+							if (back 
+									&& (this.agent.getPos().y - nextBlockNode.getBlockPos().getY() < 2
+//									|| (this.agent.getPos().y - newNode.agent.getPos().y) < 0
+									))  continue;
+							for (boolean right : new boolean[]{false, true}) {
+								while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) 
+										&& newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()) {
+										if (TungstenMod.PATHFINDER.stop) return nodes;
+										newNode = new Node(newNode, world, new PathInput(forward, back, right, false, false,
+												false, true, this.agent.pitch, yaw), new Color(back ? 220 : 0, 255, 255), this.cost + jumpCost);
+								}
+		//						Node renderNode = newNode;
+		//						while(renderNode.parent != null) {
+		//							TungstenMod.RENDERERS.add(new Line(renderNode.agent.getPos(), renderNode.parent.agent.getPos(), renderNode.color));
+		//							TungstenMod.RENDERERS.add(new Cuboid(renderNode.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), renderNode.color));
+		//							renderNode = renderNode.parent;
+		//						}
+		//						try {
+		//							Thread.sleep(50);
+		//						} catch (InterruptedException ignored) {}	
+								nodes.add(newNode);
+							}	
 						}
-//						Node renderNode = newNode;
-//						while(renderNode.parent != null) {
-//							TungstenMod.RENDERERS.add(new Line(renderNode.agent.getPos(), renderNode.parent.agent.getPos(), renderNode.color));
-//							TungstenMod.RENDERERS.add(new Cuboid(renderNode.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), renderNode.color));
-//							renderNode = renderNode.parent;
-//						}
-//						try {
-//							Thread.sleep(50);
-//						} catch (InterruptedException ignored) {}	
-						nodes.add(newNode);
 					}
 				}
 //				for (boolean forward : new boolean[]{true, false}) {

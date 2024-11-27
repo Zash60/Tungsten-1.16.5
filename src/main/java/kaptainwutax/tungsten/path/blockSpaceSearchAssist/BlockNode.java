@@ -36,6 +36,7 @@ import net.minecraft.fluid.LavaFluid;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.WorldView;
@@ -146,9 +147,11 @@ public class BlockNode {
     }
     
     public Vec3d getPos(boolean shift) {
-    	if (shift && isDoingNeo) return BlockPosShifter.shiftForStraightNeo(this, neoSide);
-    	if (shift)
-    	return new Vec3d(x+0.5, y, z+0.5);
+    	if (shift) {
+    		if (isDoingNeo) return BlockPosShifter.shiftForStraightNeo(this, neoSide);
+
+        	return new Vec3d(x+0.5, y, z+0.5);
+    	}
     	return new Vec3d(x, y, z);
     }
     
@@ -795,9 +798,9 @@ public class BlockNode {
         double blockVolume = getShapeVolume(blockShape);
         double aboveBlockVolume1 = getShapeVolume(aboveBlockShape1);
         double aboveBlockVolume2 = getShapeVolume(aboveBlockShape2);
-        if (blockState.getBlock() instanceof FenceBlock) {
-        	return true;
-        }
+//        if (blockState.getBlock() instanceof FenceBlock) {
+//        	return true;
+//        }
 
         // Compare the volumes
         return blockVolume > aboveBlockVolume1 && blockVolume > aboveBlockVolume2;
@@ -838,7 +841,7 @@ public class BlockNode {
 //		}
 //		if (yMax != 2.0)System.out.println(yMax);
 		int distanceWanted = d;
-		for( int py = -64; py < yMax; py++ ) {
+		for( int py = -64; py < yMax+1; py++ ) {
 		
 			if (py < 0 && py < -5) {
 				double t = Math.sqrt((2 * py*-1) / g);
@@ -885,7 +888,8 @@ public class BlockNode {
         BlockState childBelowState = world.getBlockState(child.getBlockPos().down());
         Block childBlock = childState.getBlock();
         Block childBelowBlock = childBelowState.getBlock();
-        double distance = DistanceCalculator.getHorizontalDistance(getPos(), child.getPos());
+    	double heightDiff = this.y - child.y; // -1 is going up and +1 is going down, in negative y levels its reversed
+        double distance = DistanceCalculator.getHorizontalDistanceSquared(getPos(), child.getPos());
 
         // Check for air below
         if (childBelowState.isAir() && !(childBlock instanceof LadderBlock)) {
@@ -896,22 +900,30 @@ public class BlockNode {
         if (isWater(childState) && wasCleared(world, getBlockPos(), child.getBlockPos())) return false;
 
         // Ladder checks
-        if ((childBelowBlock instanceof LadderBlock || childBlock instanceof LadderBlock) && wasCleared(world, getBlockPos(), child.getBlockPos())) {
+        if ((childBelowBlock instanceof LadderBlock || childBlock instanceof LadderBlock) && distance > 4.3) {
+            return true;
+        }
+        if ((childBelowBlock instanceof LadderBlock || childBlock instanceof LadderBlock) && wasCleared(world, getBlockPos(), child.getBlockPos()) && distance < 4.3 && heightDiff >= -1 ) {
             return false;
         }
 
         // General height and distance checks
-        if (previous != null && (previous.y - y < 1 && wasOnSlime || (!wasOnSlime && child.y - y > 1))) return true;
+//        if (previous != null && (previous.y - y < 1 && wasOnSlime || (!wasOnSlime && child.y - y > 1))) return true;
         if (distance >= 7) return true;
 
         // Slab checks
-//        if (isBottomSlab(childBelowState)) return true;
+        if (isBottomSlab(childState)) return true;
 //        if (isBottomSlab(childState) && !hasBiggerCollisionShapeThanAbove(world, child.getBlockPos())) return true;
 
         // Collision shape and block exceptions
+        if ((childBelowBlock instanceof StairsBlock)) System.out.println(getShapeVolume(childState.getCollisionShape(world, child.getBlockPos())));
         if (!hasBiggerCollisionShapeThanAbove(world, child.getBlockPos().down())
-                && !(childBlock instanceof DaylightDetectorBlock)
-                && !(childBlock instanceof CarpetBlock)) {
+                && (!(childBlock instanceof DaylightDetectorBlock)
+                && !(childBlock instanceof CarpetBlock)
+                && !(childBelowBlock instanceof SlabBlock)
+                )
+                || (childBelowBlock instanceof StairsBlock)
+                && getShapeVolume(childState.getCollisionShape(world, child.getBlockPos())) >= 1) {
             return true;
         }
 
@@ -935,7 +947,8 @@ public class BlockNode {
     
     public boolean isJumpImpossible(WorldView world, BlockNode child) {
     	double heightDiff = this.y - child.y; // -1 is going up and +1 is going down, in negative y levels its reversed
-        double distance = DistanceCalculator.getHorizontalDistance(getPos(), child.getPos());
+        double distance = DistanceCalculator.getHorizontalDistanceSquared(getPos(), child.getPos());
+        
         BlockState childBlockState = world.getBlockState(child.getBlockPos().down());
         BlockState currentBlockState = world.getBlockState(getBlockPos().down());
         Block childBlock = childBlockState.getBlock();
@@ -944,19 +957,116 @@ public class BlockNode {
 //    	if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof TrapdoorBlock) {
 //			System.out.println(!world.getBlockState(child.getBlockPos().down()).get(Properties.OPEN));
 //    	}
-//		System.out.println(getPos().distanceTo(child.getPos()));
-//		System.out.println(heightDiff);
 
         VoxelShape blockShape = childBlockState.getCollisionShape(world, child.getBlockPos().down());
-        VoxelShape previousBlockShape = currentBlockState.getCollisionShape(world, getBlockPos().down());
+        VoxelShape currentBlockShape = currentBlockState.getCollisionShape(world, getBlockPos().down());
+        
+        double childBlockHeight = getBlockHeight(blockShape);
+        double currentBlockHeight = getBlockHeight(currentBlockShape);
+
+        // VoxelShape-based checks
+        if (!(childBlock instanceof SlabBlock && childBlockState.get(Properties.SLAB_TYPE) == SlabType.DOUBLE)
+        		&& !(currentBlock instanceof SlabBlock && currentBlockState.get(Properties.SLAB_TYPE) == SlabType.DOUBLE)
+        		) {
+	        if (currentBlockHeight > 1.3
+	                && childBlockHeight == 0.5
+	                && heightDiff < 0
+	                && distance < 3
+	        ) {
+	            return false;
+	        }
+	        
+	        if (currentBlockHeight == 1.0
+	                && childBlockHeight == 0.5
+	                && heightDiff == -1
+	                && distance < 2
+	        ) {
+	            return false;
+	        }
+	        
+	        if (currentBlockHeight == 0.5
+	                && childBlockHeight == 0.5
+	                && heightDiff == -1
+	                && distance < 4	
+	        ) {
+	            return false;
+	        }
+	        
+	        if (currentBlockHeight == 0.5
+	                && childBlockHeight == 0.5
+	                && (heightDiff == 0 
+	                || heightDiff == -1)
+	                && distance < 5	
+	            ) {
+	                return false;
+	            }
+	        
+	        if (currentBlockHeight == 1.0
+	                && childBlockHeight == 0.5
+	                && heightDiff == -1
+	                && distance < 5	
+	            ) {
+	                return false;
+	            }
+	        
+	        if (currentBlockHeight == 1.0
+	                && childBlockHeight == 0.5
+	                && heightDiff == -2
+	                && distance < 5
+	            ) {
+	                return false;
+	            }
+	        
+	        if (currentBlockHeight < 1.0
+	                && childBlockHeight == 1
+	                && heightDiff == -1
+	            ) {
+	                return true;
+	            }
+	        
+	        if (currentBlockHeight == 0.5 
+	                && childBlockHeight >= 1.3 
+	                && heightDiff == 0 
+	                && distance > 4
+	        ) {
+	            return true;
+	        }
+	
+	        if ((childBlockHeight > 0.3 
+	        		&& childBlockHeight < 1.0
+	        		|| childBlockHeight > 1.3)
+	            && currentBlockHeight <= 1 
+	            && heightDiff < 0 
+	        ) {
+	            return true;
+	        }
+	        
+	
+	        if (currentBlockHeight < 1.3
+	                && childBlockHeight == 0.5
+	                && heightDiff > -1
+	                && distance > 3
+	                ) {
+	            return true;
+	        }
+	        
+	        if (currentBlockHeight == 1
+	                && childBlockHeight > 1.3
+	                && heightDiff >= 0
+	                && distance > 4
+	                ) {
+	            return true;
+	        }
+        }
 
         if (!wasOnSlime) {
+            if (heightDiff < -1) return true;
             // Basic height and distance checks
             if (heightDiff == 1 && distance > 6) return true;
             if (heightDiff >= 2 && distance > 7) return true;
-            if (heightDiff ==-2 && distance >= 6.3) return true;
+            if (heightDiff == -1 && distance >= 4.5) return true;
             if (heightDiff == 0 && distance >= 5.5) return true;
-            if (heightDiff < 0 && distance >= 5) return true;
+            if (heightDiff < 0 && distance >= 5.5) return true;
 
             // Trapdoor checks
             if (heightDiff == 1 && isOpenTrapdoor(childBlockState) && distance > 5) return true;
@@ -968,47 +1078,20 @@ public class BlockNode {
             				|| (!wasOnLadder
             						&& childBlock instanceof LadderBlock)
             				)
-            		&& distance >= 6) {
+            		&& distance >= 6.5) {
                 return true;
             }
         }
 
         // Large height drop
         if (heightDiff < -1 && distance >= 6) return true;
-
-        // VoxelShape-based checks
-        if (!blockShape.isEmpty() 
-                && blockShape.getBoundingBox().maxY > 1.3 
-                && !previousBlockShape.isEmpty() 
-                && previousBlockShape.getBoundingBox().maxY < 1.3 
-                && previousBlockShape.getBoundingBox().maxY > 0.5 
-                && heightDiff > 0 
-                && distance > 4) {
-            return true;
-        }
+        
+        if (isWater(currentBlockState) && distance >= 2) return true; 
 
         // Bottom slab checks
-        if (isBottomSlab(world.getBlockState(getBlockPos().down())) 
+        if (currentBlockHeight <= 0.5 
                 && heightDiff < 0 
-                && !isBottomSlab(world.getBlockState(child.getBlockPos().down()))) {
-            return true;
-        }
-
-        if (!blockShape.isEmpty() 
-                && blockShape.getBoundingBox().maxY > 1.3 
-                && child.getPos().y - getPos().y < 0 
-                && !(isBottomSlab(currentBlockState))
-                && !previousBlockShape.isEmpty() 
-                && previousBlockShape.getBoundingBox().maxY < 1.3) {
-            return true;
-        }
-
-        if ((isBottomSlab(world.getBlockState(child.getBlockPos())) 
-                || (!blockShape.isEmpty() && blockShape.getBoundingBox().maxY > 1.3)) 
-                && !isBottomSlab(world.getBlockState(getBlockPos())) 
-                && child.getPos().y - getPos().y < 0 
-                && !previousBlockShape.isEmpty() 
-                && previousBlockShape.getBoundingBox().maxY < 1.3) {
+                && childBlockHeight > 0.5) {
             return true;
         }
 
@@ -1028,6 +1111,17 @@ public class BlockNode {
     // Helper method to check if the block is a bottom slab
     private static boolean isBottomSlab(BlockState state) {
         return state.getBlock() instanceof SlabBlock && state.get(Properties.SLAB_TYPE) == SlabType.BOTTOM;
+    }
+    
+    private static double getBlockHeight(WorldView world, BlockState state, BlockPos pos) {
+    	VoxelShape blockShape = state.getCollisionShape(world, pos);
+    	
+    	return getBlockHeight(blockShape);
+    }
+    
+    // Helper method to get blocks height
+    private static double getBlockHeight(VoxelShape blockShape) {
+        return blockShape.getMax(Axis.Y);
     }
 
 

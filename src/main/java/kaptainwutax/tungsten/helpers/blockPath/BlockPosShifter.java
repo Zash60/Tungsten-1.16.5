@@ -15,20 +15,20 @@ public class BlockPosShifter {
 		BlockState blockBelowState = world.getBlockState(blockNode.getBlockPos().down());
 		Vec3d currPos = blockNode.getPos(true);
 		if (!(blockState.getBlock() instanceof LadderBlock) && !(blockBelowState.getBlock() instanceof LadderBlock)) {
-			return currPos;
+			return currPos.add(0.5, 0, 0.5);
 		}
 		
 		if (blockBelowState.getBlock() instanceof LadderBlock) {
 			Direction ladderFacingDir = blockBelowState.get(Properties.HORIZONTAL_FACING);
 			
-			currPos = currPos.offset(ladderFacingDir.getOpposite(), 0.2).add(0, 0.6, 0);
+			currPos = currPos.offset(ladderFacingDir.getOpposite(), 1.3).add(0, 0.6, 0);
 			
 			return currPos;
 		}
 		
 		Direction ladderFacingDir = blockState.get(Properties.HORIZONTAL_FACING);
 		
-		currPos = currPos.offset(ladderFacingDir.getOpposite(), 0.2).add(0, 0.6, 0);
+		currPos = currPos.offset(ladderFacingDir.getOpposite(), 1.3).add(0, 0.6, 0);
 		
 		return currPos;
 	}
