@@ -1,5 +1,6 @@
 package kaptainwutax.tungsten.helpers.blockPath;
 
+import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.LadderBlock;
@@ -10,7 +11,8 @@ import net.minecraft.world.WorldView;
 
 public class BlockPosShifter {
 	
-	public static Vec3d getPosOnLadder(WorldView world, BlockNode blockNode) {
+	public static Vec3d getPosOnLadder(BlockNode blockNode) {
+		WorldView world = TungstenMod.mc.world;
 		BlockState blockState = world.getBlockState(blockNode.getBlockPos());
 		BlockState blockBelowState = world.getBlockState(blockNode.getBlockPos().down());
 		Vec3d currPos = blockNode.getPos(true);
@@ -18,17 +20,19 @@ public class BlockPosShifter {
 			return currPos.add(0.5, 0, 0.5);
 		}
 		
+		double insetAmount = 0.4;
+		
 		if (blockBelowState.getBlock() instanceof LadderBlock) {
 			Direction ladderFacingDir = blockBelowState.get(Properties.HORIZONTAL_FACING);
 			
-			currPos = currPos.offset(ladderFacingDir.getOpposite(), 1.3).add(0, 0.6, 0);
+			currPos = currPos.offset(ladderFacingDir.getOpposite(), insetAmount).add(0, 0.6, 0);
 			
 			return currPos;
 		}
 		
 		Direction ladderFacingDir = blockState.get(Properties.HORIZONTAL_FACING);
 		
-		currPos = currPos.offset(ladderFacingDir.getOpposite(), 1.3).add(0, 0.6, 0);
+		currPos = currPos.offset(ladderFacingDir.getOpposite(), insetAmount).add(0, 0.6, 0);
 		
 		return currPos;
 	}

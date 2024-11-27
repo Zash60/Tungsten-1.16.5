@@ -38,7 +38,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 	@Inject(method = "tick", at = @At("HEAD"))
 	public void start(CallbackInfo ci) {
 		if(TungstenMod.EXECUTOR.isRunning()) {
-			TungstenMod.EXECUTOR.tick((ClientPlayerEntity)(Object)this, MinecraftClient.getInstance().options);
+			TungstenMod.EXECUTOR.tick((ClientPlayerEntity)(Object)this, TungstenMod.mc.options);
 		}
 
 		if(!this.getAbilities().flying) {
@@ -75,7 +75,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 		}
 		
 		if (TungstenMod.createGoalKeyBinding.isPressed()) {
-			BlockPos cameraBlockPos = MinecraftClient.getInstance().gameRenderer.getCamera().getBlockPos();
+			BlockPos cameraBlockPos = TungstenMod.mc.gameRenderer.getCamera().getBlockPos();
 			TungstenMod.TARGET = new Vec3d(cameraBlockPos.getX() + 0.5, cameraBlockPos.getY() - 1, cameraBlockPos.getZ() + 0.5);
 		}
 	}

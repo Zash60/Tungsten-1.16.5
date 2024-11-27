@@ -49,7 +49,7 @@ public class BlockSpacePathFinder {
 	}
 	
 	public static Optional<List<BlockNode>> search(WorldView world, Vec3d target) {
-		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
+		ClientPlayerEntity player = Objects.requireNonNull(TungstenMod.mc.player);
 		return search(world, new BlockNode(player.getBlockPos(), new Goal((int) target.x, (int) target.y, (int) target.z)), target);
 	}
 	

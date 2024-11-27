@@ -1523,13 +1523,13 @@ public class Agent {
 
     public static Agent of(ClientPlayerEntity player) {
         Agent agent = new Agent();
-        agent.keyForward = MinecraftClient.getInstance().options.forwardKey.isPressed();
-        agent.keyBack = MinecraftClient.getInstance().options.backKey.isPressed();
-        agent.keyLeft = MinecraftClient.getInstance().options.leftKey.isPressed();
-        agent.keyRight = MinecraftClient.getInstance().options.rightKey.isPressed();
-        agent.keyJump = MinecraftClient.getInstance().options.jumpKey.isPressed();
-        agent.keySneak = MinecraftClient.getInstance().options.sneakKey.isPressed();
-        agent.keySprint = MinecraftClient.getInstance().options.sprintKey.isPressed();
+        agent.keyForward = TungstenMod.mc.options.forwardKey.isPressed();
+        agent.keyBack = TungstenMod.mc.options.backKey.isPressed();
+        agent.keyLeft = TungstenMod.mc.options.leftKey.isPressed();
+        agent.keyRight = TungstenMod.mc.options.rightKey.isPressed();
+        agent.keyJump = TungstenMod.mc.options.jumpKey.isPressed();
+        agent.keySneak = TungstenMod.mc.options.sneakKey.isPressed();
+        agent.keySprint = TungstenMod.mc.options.sprintKey.isPressed();
 
         agent.input.movementSideways = player.input.movementSideways;
         agent.input.movementForward = player.input.movementForward;

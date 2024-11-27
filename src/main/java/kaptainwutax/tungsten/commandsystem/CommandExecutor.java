@@ -80,7 +80,7 @@ public class CommandExecutor {
     
     
     public static void dispatch(String message) throws CommandSyntaxException {
-        DISPATCHER.execute(message, MinecraftClient.getInstance().getNetworkHandler().getCommandSource());
+        DISPATCHER.execute(message, TungstenMod.mc.getNetworkHandler().getCommandSource());
     }
 
     public void execute(String line, Consumer<CommandException> getException) {

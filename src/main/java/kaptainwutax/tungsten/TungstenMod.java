@@ -15,6 +15,7 @@ import kaptainwutax.tungsten.render.Renderer;
 import kaptainwutax.tungsten.world.VoxelWorld;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.math.Vec3d;
@@ -24,7 +25,8 @@ public class TungstenMod implements ClientModInitializer {
 	public static final String MOD_ID = "tungsten";
 //    public static final ModMetadata MOD_META;
     public static final String NAME;
-    
+
+    public static MinecraftClient mc;
 	public static Collection<Renderer> RENDERERS = Collections.synchronizedCollection(new ArrayList<>());
 	public static Collection<Renderer> TEST = Collections.synchronizedCollection(new ArrayList<>());
 	public static Vec3d TARGET = new Vec3d(0.5D, 10.0D, 0.5D);
@@ -74,6 +76,9 @@ public class TungstenMod implements ClientModInitializer {
 	            "key.category.tungsten.test" // The translation key of the keybinding's category.
         ));
         _commandExecutor = new CommandExecutor(this);
+
+        // Global minecraft client accessor
+        mc = MinecraftClient.getInstance();
 
         initializeCommands();
 	}

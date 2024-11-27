@@ -17,6 +17,7 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import kaptainwutax.tungsten.Debug;
+import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.commandsystem.Arg;
 import kaptainwutax.tungsten.commandsystem.CommandException;
 import kaptainwutax.tungsten.path.targets.BlockTarget;
@@ -110,9 +111,9 @@ public class GotoTargetArgumentType implements ArgumentType<BlockTarget> {
 	    matcher.find();
 
 	    if (!matcher.hasMatch()) {
-		int x = MinecraftClient.getInstance().player.getBlockX();
-		int y = MinecraftClient.getInstance().player.getBlockY();
-		int z = MinecraftClient.getInstance().player.getBlockZ();
+		int x = TungstenMod.mc.player.getBlockX();
+		int y = TungstenMod.mc.player.getBlockY();
+		int z = TungstenMod.mc.player.getBlockZ();
 		suggestions.add(x + " " + y + " " + z);
 		suggestions.add(x + " " + z);
 		suggestions.add(y + "");

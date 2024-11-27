@@ -23,6 +23,7 @@ import net.minecraft.block.LadderBlock;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.LilyPadBlock;
 import net.minecraft.block.SeaPickleBlock;
+import net.minecraft.block.SkullBlock;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.SlimeBlock;
 import net.minecraft.block.StairsBlock;
@@ -94,8 +95,8 @@ public class BlockNode {
         this.x = pos.getX();
         this.y = pos.getY();
         this.z = pos.getZ();
-        this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(pos.down()).getBlock() instanceof SlimeBlock;
-        this.wasOnLadder = MinecraftClient.getInstance().world.getBlockState(pos).getBlock() instanceof LadderBlock;
+        this.wasOnSlime = TungstenMod.mc.world.getBlockState(pos.down()).getBlock() instanceof SlimeBlock;
+        this.wasOnLadder = TungstenMod.mc.world.getBlockState(pos).getBlock() instanceof LadderBlock;
     }
     
     public BlockNode(int x, int y, int z, Goal goal) {
@@ -109,14 +110,14 @@ public class BlockNode {
         this.x = x;
         this.y = y;
         this.z = z;
-        this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y-1, z)).getBlock() instanceof SlimeBlock;
-        this.wasOnLadder = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
+        this.wasOnSlime = TungstenMod.mc.world.getBlockState(new BlockPos(x, y-1, z)).getBlock() instanceof SlimeBlock;
+        this.wasOnLadder = TungstenMod.mc.world.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
     }
     
     public BlockNode(int x, int y, int z, Goal goal, BlockNode parent, double cost) {
         this.previous = parent;
-        this.wasOnSlime = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y-1, z)).getBlock() instanceof SlimeBlock;
-        this.wasOnLadder = MinecraftClient.getInstance().world.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
+        this.wasOnSlime = TungstenMod.mc.world.getBlockState(new BlockPos(x, y-1, z)).getBlock() instanceof SlimeBlock;
+        this.wasOnLadder = TungstenMod.mc.world.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
         this.cost = parent != null ? 0 : ActionCosts.COST_INF;
         this.estimatedCostToGoal = goal.heuristic(x, y, z);
         if (Double.isNaN(estimatedCostToGoal)) {
@@ -220,7 +221,7 @@ public class BlockNode {
         boolean isMovingOnXAxis = x1-x2 == 0;
         boolean isMovingOnZAxis = z1-z2 == 0;
         boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
-      boolean shouldRender = false;
+      boolean shouldRender = true;
       boolean shouldSlow = false;
       if (shouldSlow) {
 		TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
@@ -765,6 +766,7 @@ public class BlockNode {
     			|| world.getBlockState(pos).getBlock() instanceof LeavesBlock
     			) 
     			&& (!hasBiggerCollisionShapeThanAbove(world, pos) && !isJumpingUp)
+    			// This causes it not to understand bottom slab under fence
     			|| hasBiggerCollisionShapeThanAbove(world, pos)
 				) 
 		&& !(world.getBlockState(pos).getBlock() instanceof SlabBlock)
@@ -841,7 +843,7 @@ public class BlockNode {
 //		}
 //		if (yMax != 2.0)System.out.println(yMax);
 		int distanceWanted = d;
-		for( int py = -64; py < yMax+1; py++ ) {
+		for( int py = -64; py < yMax+2; py++ ) {
 		
 			if (py < 0 && py < -5) {
 				double t = Math.sqrt((2 * py*-1) / g);
@@ -937,6 +939,7 @@ public class BlockNode {
 
 		if (isJumpImpossible(world, child)) return true;
 		
+		// TODO: Fix bottom slab under fence thing
 		if (!wasCleared(world, getBlockPos(), child.getBlockPos(), this, child)) {
             return true;
         }
@@ -978,6 +981,24 @@ public class BlockNode {
 	        
 	        if (currentBlockHeight == 1.0
 	                && childBlockHeight == 0.5
+	                && heightDiff == -2
+	                && distance < 4
+	                && getShapeVolume(childBlockState.getCollisionShape(world, child.getBlockPos().down())) == 0.25
+	                && getShapeVolume(currentBlockState.getCollisionShape(world, getBlockPos().down())) >= 0.25
+	        ) {
+	            return false;
+	        }
+	        
+	        if (currentBlockHeight == 1.0
+	                && childBlockHeight == 0.5
+	                && heightDiff == -2
+	                && distance < 2
+	        ) {
+	            return false;
+	        }
+	        
+	        if (currentBlockHeight == 1.0
+	                && childBlockHeight == 0.5
 	                && heightDiff == -1
 	                && distance < 2
 	        ) {
@@ -1013,20 +1034,27 @@ public class BlockNode {
 	                && childBlockHeight == 0.5
 	                && heightDiff == -2
 	                && distance < 5
-	            ) {
+	            ) {	
 	                return false;
 	            }
-	        
+	        if (currentBlockHeight == 0.5
+	                && childBlockHeight == 1.0
+	                && heightDiff > -1
+	                && distance < 5
+	            ) {	
+	                return false;
+	            }
+//	        
 	        if (currentBlockHeight < 1.0
 	                && childBlockHeight == 1
-	                && heightDiff == -1
+	                && heightDiff <= -1
 	            ) {
 	                return true;
 	            }
 	        
 	        if (currentBlockHeight == 0.5 
 	                && childBlockHeight >= 1.3 
-	                && heightDiff == 0 
+	                && heightDiff >= 0 
 	                && distance > 4
 	        ) {
 	            return true;
@@ -1045,7 +1073,7 @@ public class BlockNode {
 	        if (currentBlockHeight < 1.3
 	                && childBlockHeight == 0.5
 	                && heightDiff > -1
-	                && distance > 3
+	                && distance > 4
 	                ) {
 	            return true;
 	        }

@@ -122,9 +122,9 @@ public abstract class MixinChatInputSuggestor {
             if (this.parse == null) {
             	TungstenMod.getCommandExecutor();
                 if (message.contains("|")) {
-                	this.parse = CommandExecutor.DISPATCHER.parse(new StringReader(message.split("|")[message.split("|").length-1]), MinecraftClient.getInstance().getNetworkHandler().getCommandSource());
+                	this.parse = CommandExecutor.DISPATCHER.parse(new StringReader(message.split("|")[message.split("|").length-1]), TungstenMod.mc.getNetworkHandler().getCommandSource());
                 } else
-                	this.parse = CommandExecutor.DISPATCHER.parse(reader, MinecraftClient.getInstance().getNetworkHandler().getCommandSource());
+                	this.parse = CommandExecutor.DISPATCHER.parse(reader, TungstenMod.mc.getNetworkHandler().getCommandSource());
             }
 
             int cursor = textField.getCursor();

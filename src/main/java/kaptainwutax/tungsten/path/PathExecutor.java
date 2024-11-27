@@ -1,14 +1,11 @@
 package kaptainwutax.tungsten.path;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.option.GameOptions;
-
 import java.util.List;
-import java.util.function.Function;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.GameOptions;
 
 public class PathExecutor {
 
@@ -20,14 +17,14 @@ public class PathExecutor {
 
     public PathExecutor() {
     	try {
-        	this.allowedFlying = MinecraftClient.getInstance().player.getAbilities().allowFlying;
+        	this.allowedFlying = TungstenMod.mc.player.getAbilities().allowFlying;
 		} catch (Exception e) {
 			this.allowedFlying = true;
 		}
 	}
 
 	public void setPath(List<Node> path) {
-    	this.allowedFlying = MinecraftClient.getInstance().player.getAbilities().allowFlying;
+    	this.allowedFlying = TungstenMod.mc.player.getAbilities().allowFlying;
 	    stop = false;
     	this.path = path;
     	this.tick = 0;

@@ -34,7 +34,7 @@ public class GotoCommand extends Command {
 	        	BlockTarget target = GotoTargetArgumentType.get(context);
 	        	if(!TungstenMod.PATHFINDER.active && !TungstenMod.EXECUTOR.isRunning()) {
 	        		TungstenMod.TARGET = target.getVec3d().add(0.5, 0, 0.5);
-	        		TungstenMod.PATHFINDER.find(MinecraftClient.getInstance().world, target.getVec3d().add(0.5, 0, 0.5));
+	        		TungstenMod.PATHFINDER.find(TungstenMod.mc.world, target.getVec3d().add(0.5, 0, 0.5));
 	    		} else {
 	    			Debug.logWarning("Already running!");
 	    		}

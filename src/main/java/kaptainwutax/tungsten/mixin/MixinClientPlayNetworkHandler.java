@@ -73,7 +73,7 @@ public abstract class MixinClientPlayNetworkHandler extends ClientCommonNetworkH
         shift = At.Shift.AFTER), cancellable = true)
     public void onEntityTrackerUpdate(EntityTrackerUpdateS2CPacket packet, CallbackInfo ci) {
         if(TungstenMod.EXECUTOR.isRunning()) {
-            ClientPlayerEntity player = MinecraftClient.getInstance().player;
+            ClientPlayerEntity player = TungstenMod.mc.player;
 
             if(player != null && packet.id() == player.getId()) {
                 ci.cancel();
@@ -85,7 +85,7 @@ public abstract class MixinClientPlayNetworkHandler extends ClientCommonNetworkH
         shift = At.Shift.AFTER), cancellable = true)
     public void onPlayerPositionLook(PlayerPositionLookS2CPacket packet, CallbackInfo ci) {
         if(TungstenMod.EXECUTOR.isRunning()) {
-            ClientPlayerEntity player = MinecraftClient.getInstance().player;
+            ClientPlayerEntity player = TungstenMod.mc.player;
 
 //            if(player != null) {
 //                this.connection.send(new TeleportConfirmC2SPacket(packet.getTeleportId()));

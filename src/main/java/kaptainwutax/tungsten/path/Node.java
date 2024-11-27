@@ -198,14 +198,13 @@ public class Node {
 			List<Node> nodes = new ArrayList<Node>();
 			try {
 				long jumpCost = 0;
-				ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
+				ClientPlayerEntity player = Objects.requireNonNull(TungstenMod.mc.player);
 				Node newNode = new Node(this, world, new PathInput(true, false, false, false, false,
 						false, player.getHungerManager().getFoodLevel() > 6, this.agent.pitch, this.agent.yaw), new Color(0, 255, 255), this.cost + jumpCost);
 
 				for (float yaw = this.agent.yaw - 45; yaw < 180.0f; yaw += 22.5) {
 					for (boolean forward : new boolean[]{true, false}) {
 						for (boolean back : new boolean[]{true, false}) {
-							System.out.println(this.agent.getPos().y - nextBlockNode.getBlockPos().getY());
 							if (back 
 									&& (this.agent.getPos().y - nextBlockNode.getBlockPos().getY() < 2
 //									|| (this.agent.getPos().y - newNode.agent.getPos().y) < 0
@@ -214,6 +213,7 @@ public class Node {
 								while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) 
 										&& newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()) {
 										if (TungstenMod.PATHFINDER.stop) return nodes;
+										if (newNode.agent.isClimbing(world)) break;
 										newNode = new Node(newNode, world, new PathInput(forward, back, right, false, false,
 												false, true, this.agent.pitch, yaw), new Color(back ? 220 : 0, 255, 255), this.cost + jumpCost);
 								}
