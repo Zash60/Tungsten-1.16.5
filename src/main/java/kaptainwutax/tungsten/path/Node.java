@@ -3,16 +3,22 @@ package kaptainwutax.tungsten.path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
+
+import com.google.common.collect.Streams;
 
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.agent.Agent;
+import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
 import kaptainwutax.tungsten.render.Line;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.WorldView;
 
 public class Node {
@@ -92,6 +98,12 @@ public class Node {
 														boolean isMoving = (forward || right || left);
 
 														if (isMoving && sprint && jump && !sneak) addNodeCost -= 0.2;
+												        Box adjustedBox = this.agent.box.offset(0, -0.5, 0).expand(-0.001, 0, -0.001);
+												        Stream<VoxelShape> blockCollisions = Streams.stream(TungstenMod.mc.world.getBlockCollisions(TungstenMod.mc.player, adjustedBox));
+														if (DistanceCalculator.getHorizontalDistance(this.agent.getPos(), nextBlockNode.getPos(true)) >= 4 
+																&& (sneak
+																|| jump
+																&& blockCollisions.findAny().isPresent())) continue;
 														if (sneak) addNodeCost += 2;
 														if (this.agent.isSubmergedInWater || this.agent.touchingWater) {
 															for (float pitch = -90.0f; pitch < 90.0f; pitch += 45) {
@@ -108,8 +120,11 @@ public class Node {
 														} else {
 															Node newNode = new Node(this, world, new PathInput(forward, false, right, left, jump, sneak, sprint, agent.pitch, yaw), new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
 //															if (!jump)
-																for (int j = 0; j < 2; j++) {
-																	if (newNode.agent.getPos().y < nextBlockNode.getBlockPos().getY()) break;
+																for (int j = 0; j < 
+//																		(DistanceCalculator.getHorizontalDistance(this.agent.getPos(), nextBlockNode.getPos(true)) >= 4 ? 6 : 3)
+																		(sneak || !jump ? 3 : 10)
+																		; j++) {
+																	if (newNode.agent.getPos().y < nextBlockNode.getBlockPos().getY() || !isMoving) break;
 																	newNode = new Node(newNode, world, new PathInput(forward, false, right, left, jump,
 																			sneak, sprint, this.agent.pitch, yaw), 
 																			jump ? new Color(0, 255, 255) : new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0)
@@ -153,20 +168,7 @@ public class Node {
 						}
 					}
 //				}
-			}
-			
-//			nodes.sort((n1, n2) -> {
-//				
-//				double desiredYaw = PathFinder.calcYawFromVec3d(this.agent.getPos(), target);
-//				
-//				if (n1.agent.yaw - desiredYaw < 60 && n2.agent.yaw - desiredYaw < 60) {
-//					return 0;
-//				} else if (n1.agent.yaw - desiredYaw < 60) {
-//					return -1;
-//				}
-//				return 1;
-//				
-//			});
+			}	
 			
 			nodes.sort((n1, n2) -> {
 				double desiredYaw = PathFinder.calcYawFromVec3d(this.agent.getPos(), target);

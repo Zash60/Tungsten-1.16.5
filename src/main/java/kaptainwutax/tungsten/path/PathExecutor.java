@@ -51,8 +51,6 @@ public class PathExecutor {
 		    options.sprintKey.setPressed(false);
 		    player.getAbilities().allowFlying = allowedFlying;
 		    this.path = null;
-    		Debug.logMessage("Stop key " + TungstenMod.pauseKeyBinding.isPressed());
-    		Debug.logMessage("Stop " + stop);
 		    stop = false;
     		return;
     	}

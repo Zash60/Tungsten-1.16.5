@@ -20,9 +20,13 @@ import kaptainwutax.tungsten.path.calculators.BinaryHeapOpenSet;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
 import kaptainwutax.tungsten.render.Line;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.CobwebBlock;
+import net.minecraft.block.FenceBlock;
 import net.minecraft.block.LadderBlock;
 import net.minecraft.block.PaneBlock;
 import net.minecraft.block.StainedGlassPaneBlock;
+import net.minecraft.block.WallBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -68,7 +72,7 @@ public class PathFinder {
 		TungstenMod.RENDERERS.clear();
 		NEXT_CLOSEST_BLOCKNODE_IDX = 1;
 		long startTime = System.currentTimeMillis();
-		long primaryTimeoutTime = startTime + 2500L;
+		long primaryTimeoutTime = startTime + 250L;
 		int numNodesConsidured = 0;
 		int timeCheckInterval = 1 << 3;
 		ClientPlayerEntity player = Objects.requireNonNull(TungstenMod.mc.player);
@@ -142,7 +146,7 @@ public class PathFinder {
 
 	    				path.add(n);
 	    				Collections.reverse(path);
-	    				minVel = 0.087;
+	    				minVel = 0.08;
 	    				if (path.get(path.size()-1).agent.velX < minVel && path.get(path.size()-1).agent.velX > -minVel && path.get(path.size()-1).agent.velZ < minVel && path.get(path.size()-1).agent.velZ > -minVel) {					
 		        			closed = new HashSet<>();
 		        			TungstenMod.EXECUTOR.setPath(path);
@@ -222,6 +226,8 @@ public class PathFinder {
 			 
 			for(Node child : next.getChildren(world, target, blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX))) {
 				if(stop) break;
+				if (child.agent.touchingWater
+						&& shouldNodeBeSkiped(next, target, closed, true)) continue;
 				if (player.getHungerManager().getFoodLevel() <= 6 && (child.input.sprint)) continue;
 //				if (!child.agent.isSubmergedInWater && !child.agent.isClimbing(world) && shouldNodeBeSkiped(child, target, closed)) continue;
 //				if(closed.contains(child.agent.getPos()))continue;
@@ -322,13 +328,14 @@ public class PathFinder {
 	}
 	
 	private static double computeHeuristic(Vec3d position, boolean onGround, Vec3d target) {
-	    double dx = position.x - target.x;
+		long xzMultiplier = 1;
+	    double dx = (position.x - target.x)*xzMultiplier;
 	    double dy = 0;
 	    if (target.y != Double.MIN_VALUE) {
 		    dy = (position.y - target.y) * 3.6;//*16;
 		    if (!onGround || dy < 1.6 && dy > -1.6) dy = 0;
 	    }
-	    double dz = position.z - target.z;
+	    double dz = (position.z - target.z)*xzMultiplier;
 	    return (Math.sqrt(dx * dx + dy * dy + dz * dz) + ((NEXT_CLOSEST_BLOCKNODE_IDX - 1) * -20));
 	}
 	
@@ -348,24 +355,34 @@ public class PathFinder {
 //	    	collisionScore *= 20000;
 	    	collisionScore -= 2;
 	    }
-	    if (child.agent.slimeBounce) {
-	    	collisionScore -= 20000;
+	    if (world.getBlockState(child.agent.getBlockPos()).getBlock() instanceof CobwebBlock) {
+	    	collisionScore += 20000;
 	    }
+//	    if (child.agent.slimeBounce) {
+//	    	collisionScore -= 20000;
+//	    }
 
 	    double estimatedCostToGoal = /*computeHeuristic(childPos, child.agent.onGround, target) - 200 +*/ collisionScore;
 	    if (blockPath != null) {
 	    	int closestPosIDX = findClosestPositionIDX(world, new BlockPos(child.agent.blockX, child.agent.blockY, child.agent.blockZ), blockPath);
 	    	BlockNode closestPos = blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX);
+	        BlockState stateBelow = world.getBlockState(closestPos.getBlockPos().down());
 //	    	if (closestPosIDX+1 - NEXT_CLOSEST_BLOCKNODE_IDX <= 2) {
 		    	if (closestPosIDX+1 > NEXT_CLOSEST_BLOCKNODE_IDX && closestPosIDX +1 < blockPath.size() && 
-
+		    			(
+		    					child.agent.onGround
+		    					|| child.agent.isClimbing(world)
+		    					|| stateBelow.getBlock() instanceof LadderBlock
+		    					|| world.getBlockState(closestPos.getBlockPos().down()).getCollisionShape(world, closestPos.getBlockPos().down()).getMax(Axis.Y) > 1.3
+		    					)
+		    			&&
 			    		(
 			    				(world.getBlockState(closestPos.getBlockPos()).getBlock() instanceof LadderBlock
 			    						|| world.getBlockState(closestPos.getBlockPos().down()).getBlock() instanceof LadderBlock
 			    						)
 			    		&& child.agent.getPos().isWithinRangeOf(BlockPosShifter.getPosOnLadder(closestPos), 0.5, 0.5) 
 			    		|| world.getBlockState(closestPos.getBlockPos().down()).getCollisionShape(world, closestPos.getBlockPos().down()).getMax(Axis.Y) > 1.3
-			    		&& child.agent.getPos().isWithinRangeOf(closestPos.getPos(), 0.5, 0.5) 
+			    		&& child.agent.getPos().isWithinRangeOf(closestPos.getPos(true), 0.6, 0.5) 
 			    		|| !(world.getBlockState(closestPos.getBlockPos()).getBlock() instanceof LadderBlock)
 			    		&& !(world.getBlockState(closestPos.getBlockPos().down()).getBlock() instanceof LadderBlock)
 			    		&& !(world.getBlockState(closestPos.getBlockPos().down()).getBlock() instanceof PaneBlock)
@@ -376,6 +393,7 @@ public class PathFinder {
 			    		|| (world.getBlockState(closestPos.getBlockPos().down()).getBlock() instanceof StainedGlassPaneBlock))
 			    		&& child.agent.getPos().distanceTo(closestPos.getPos(true)) < 0.4
 			    		)
+//			    		&& (child.agent.getBlockPos().getY() == blockPath.get(closestPosIDX).getBlockPos().getY())
 		    			) {
 		    		NEXT_CLOSEST_BLOCKNODE_IDX = closestPosIDX+1;
 			    	closestPos = blockPath.get(closestPosIDX+1);
@@ -477,7 +495,7 @@ public class PathFinder {
 			if (node.previous != null)
 			TungstenMod.RENDERERS.add(new Line(new Vec3d(node.previous.x + 0.5, node.previous.y + 0.1, node.previous.z + 0.5), new Vec3d(node.x + 0.5, node.y + 0.1, node.z + 0.5), Color.RED));
 			if (nodes.size() <= NEXT_CLOSEST_BLOCKNODE_IDX) NEXT_CLOSEST_BLOCKNODE_IDX = nodes.size()-1;
-            TungstenMod.RENDERERS.add(new Cuboid(BlockPosShifter.getPosOnLadder(node), new Vec3d(0.2D, 1.0D, 0.2D), 
+            TungstenMod.RENDERERS.add(new Cuboid(node.getPos(true).subtract(0.1, 0, 0.1), new Vec3d(0.2D, 0.2D, 0.2D), 
             		(nodes.get(NEXT_CLOSEST_BLOCKNODE_IDX).equals(node)) ? Color.WHITE : Color.BLUE
             		));
 //            TungstenMod.RENDERERS.add(new Cuboid(new Vec3d(node.getBlockPos().getX(), node.getBlockPos().getY(), node.getBlockPos().getZ()), new Vec3d(1.0D, 1.0D, 1.0D), 

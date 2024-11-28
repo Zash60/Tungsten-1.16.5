@@ -15,9 +15,9 @@ public class BlockPosShifter {
 		WorldView world = TungstenMod.mc.world;
 		BlockState blockState = world.getBlockState(blockNode.getBlockPos());
 		BlockState blockBelowState = world.getBlockState(blockNode.getBlockPos().down());
-		Vec3d currPos = blockNode.getPos(true);
+		Vec3d currPos = blockNode.getPos().add(0.5, 0, 0.5);
 		if (!(blockState.getBlock() instanceof LadderBlock) && !(blockBelowState.getBlock() instanceof LadderBlock)) {
-			return currPos.add(0.5, 0, 0.5);
+			return currPos;
 		}
 		
 		double insetAmount = 0.4;
@@ -41,7 +41,7 @@ public class BlockPosShifter {
 		if (dir == Direction.DOWN || dir == Direction.UP) {
 			throw new IllegalArgumentException("Only horizontal directions may be passed!");
 		}
-		Vec3d currPos = new Vec3d(blockNode.getBlockPos().getX() + 0.5, blockNode.getBlockPos().getY(), blockNode.getBlockPos().getZ() + 0.5).offset(dir, 0.4);
+		Vec3d currPos = new Vec3d(blockNode.getBlockPos().getX() + 0.5, blockNode.getBlockPos().getY(), blockNode.getBlockPos().getZ() + 0.5).offset(dir, 0.55);
 		
 		return currPos;
 	}

@@ -20,8 +20,8 @@ public class MixinDebugRenderer {
     @Inject(method = "render", at = @At("RETURN"))
     public void render(MatrixStack matrices, VertexConsumerProvider.Immediate vertexConsumers, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
         RenderSystem.disableDepthTest();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
         RenderSystem.disableBlend();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 //
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder builder;
