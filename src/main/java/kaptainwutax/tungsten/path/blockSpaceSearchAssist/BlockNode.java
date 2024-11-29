@@ -776,6 +776,7 @@ public class BlockNode {
     			|| hasBiggerCollisionShapeThanAbove(world, pos)
     			&& !(world.getBlockState(pos.up()).getBlock() instanceof FenceBlock)
     			&& !(world.getBlockState(pos.up()).getBlock() instanceof WallBlock)
+    			&& !(world.getBlockState(pos.up()).getBlock() instanceof LeavesBlock)
 				) 
 		&& !(world.getBlockState(pos).getBlock() instanceof SlabBlock)
 		&& !(world.getBlockState(pos).getBlock() instanceof CarpetBlock)
@@ -991,16 +992,16 @@ public class BlockNode {
         if (!Double.isInfinite(blockHeightDiff) && !Double.isNaN(blockHeightDiff)) {
 	        if (blockHeightDiff != 0) {
 	        	if (Math.abs(blockHeightDiff) > 0.5 && Math.abs(blockHeightDiff) <= 1.0) {
-	    			if (heightDiff < 0 && blockShape.getMin(Axis.Y) == 0.0) return true;
+	    			if (heightDiff < 0 && (blockShape.getMin(Axis.Y) == 0.0 && currentBlockHeight <= 1.0)) return true;
 	        		if (heightDiff == -2 && distance <= 5.3) return false;
 	        		if (heightDiff <= 0 && distance <= 5.3) return false;
 	        	}
-	        	if (Math.abs(blockHeightDiff) <= 0.5 && blockShape.getMin(Axis.Y) == 0.0) {
+	        	if (Math.abs(blockHeightDiff) <= 0.5 && (blockShape.getMin(Axis.Y) == 0.0 || childBlockHeight > 1.0)) {
 	        		if (blockHeightDiff == -0.5 && heightDiff <= -1) return true;
 	        		if (heightDiff >= -1 && distance <= 7.4) return false;
 	        	}
 	        	
-	        	if (Math.abs(blockHeightDiff) >= 0.5 && blockShape.getMin(Axis.Y) == 0.0) return true;
+	        	if (Math.abs(blockHeightDiff) >= 0.5 && (blockShape.getMin(Axis.Y) == 0.0 || childBlockHeight > 1.0)) return true;
 	        }
         }
 
