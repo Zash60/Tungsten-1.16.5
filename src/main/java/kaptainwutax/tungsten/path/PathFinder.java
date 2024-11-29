@@ -383,7 +383,7 @@ public class PathFinder {
 			    						)
 			    		&& child.agent.getPos().isWithinRangeOf(BlockPosShifter.getPosOnLadder(closestPos), 0.5, 0.5) 
 			    		|| world.getBlockState(closestPos.getBlockPos().down()).getCollisionShape(world, closestPos.getBlockPos().down()).getMax(Axis.Y) > 1.3
-			    		&& child.agent.getPos().isWithinRangeOf(closestPos.getPos(true), 0.6, 0.5) 
+			    		&& child.agent.getPos().isWithinRangeOf(closestPos.getPos(true), 1.2, 0.3) 
 			    		|| !(world.getBlockState(closestPos.getBlockPos()).getBlock() instanceof LadderBlock)
 			    		&& !(world.getBlockState(closestPos.getBlockPos().down()).getBlock() instanceof LadderBlock)
 			    		&& !(world.getBlockState(closestPos.getBlockPos().down()).getBlock() instanceof PaneBlock)
