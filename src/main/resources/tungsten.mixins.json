@@ -9,7 +9,6 @@
     "AccessorLivingEntity",
     "MixinMinecraftClient",
     "MixinClientPlayerEntity",
-    "MixinClientPlayerInteractionManager",
     "MixinDebugRenderer",
     "MixinShapeContext",
     "MixinClientPlayNetworkHandler",

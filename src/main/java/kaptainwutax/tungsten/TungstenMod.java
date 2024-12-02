@@ -14,11 +14,22 @@ import kaptainwutax.tungsten.path.PathFinder;
 import kaptainwutax.tungsten.render.Renderer;
 import kaptainwutax.tungsten.world.VoxelWorld;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.RaycastContext;
 
 public class TungstenMod implements ClientModInitializer {
 
@@ -30,6 +41,7 @@ public class TungstenMod implements ClientModInitializer {
 	public static Collection<Renderer> RENDERERS = Collections.synchronizedCollection(new ArrayList<>());
 	public static Collection<Renderer> TEST = Collections.synchronizedCollection(new ArrayList<>());
 	public static Vec3d TARGET = new Vec3d(0.5D, 10.0D, 0.5D);
+	public static clickModeEnum clickMode = clickModeEnum.OFF;
 	public static PathExecutor EXECUTOR = new PathExecutor();
 	public static PathFinder PATHFINDER = new PathFinder();
 	public static final Logger LOG;
@@ -81,6 +93,56 @@ public class TungstenMod implements ClientModInitializer {
         mc = MinecraftClient.getInstance();
 
         initializeCommands();
+        
+        ClientTickEvents.START_CLIENT_TICK.register((a) -> {
+        	
+        	boolean isRunning = this.PATHFINDER.active || this.EXECUTOR.isRunning();
+        	
+        	if (clickMode != clickModeEnum.OFF && mc.options.useKey.isPressed() && !isRunning) {
+        		
+        		 Camera camera = mc.gameRenderer.getCamera();
+                 Vec3d cameraPos = camera.getPos();
+
+                 // Calculate the direction the camera is looking based on its pitch and yaw, and extend this direction 210 units away from the camera position
+                 // 210 is used here as the maximum distance of 200 blocks
+                 // This is done to be able to set target while in freecam
+                 Vec3d direction = Vec3d.fromPolar(camera.getPitch(), camera.getYaw()).multiply(210);
+                 Vec3d targetPos = cameraPos.add(direction);
+                 
+                 RaycastContext context = new RaycastContext(
+                         cameraPos,   // start position of the ray
+                         targetPos,   // end position of the ray
+                         RaycastContext.ShapeType.OUTLINE,
+                         RaycastContext.FluidHandling.NONE,
+                         mc.player
+                 );
+                 
+                 HitResult hitResult = mc.world.raycast(context);
+                 
+                 if (hitResult.getType() == HitResult.Type.BLOCK) {
+                     BlockPos pos = ((BlockHitResult) hitResult).getBlockPos();
+                     Direction side = ((BlockHitResult) hitResult).getSide();
+	                 if (mc.world.getBlockState(pos).onUse(mc.world, mc.player, (BlockHitResult) hitResult) != ActionResult.PASS) return;
+	
+		                 BlockState state = mc.world.getBlockState(pos);
+		
+		                 VoxelShape shape = state.getCollisionShape(mc.world, pos);
+		                 if (shape.isEmpty()) shape = state.getOutlineShape(mc.world, pos);
+		
+		                 double height = shape.isEmpty() ? 1 : shape.getMax(Direction.Axis.Y);
+		
+		                 Vec3d newPos = new Vec3d(pos.getX() + 0.5 + side.getOffsetX(), pos.getY() + height, pos.getZ() + 0.5 + side.getOffsetZ());
+		         		TungstenMod.TARGET = newPos;
+		         		
+
+		        		if (clickMode == clickModeEnum.GOTO && !TungstenMod.PATHFINDER.active) {
+		        			PATHFINDER.find(this.mc.world, TARGET);
+		        		}
+	        		}
+        		}
+        		
+        		
+        });
 	}
 	
 	 public static String getCommandPrefix() {
@@ -102,6 +164,12 @@ public class TungstenMod implements ClientModInitializer {
      */
     public static CommandExecutor getCommandExecutor() {
         return _commandExecutor;
+    }
+    
+    public enum clickModeEnum {
+    	OFF,
+    	PLACE_GOAL,
+    	GOTO
     }
 
 }
