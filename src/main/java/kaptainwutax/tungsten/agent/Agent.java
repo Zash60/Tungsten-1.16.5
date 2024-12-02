@@ -1117,6 +1117,7 @@ public class Agent {
 
     public int computeFallDamage(float fallDistance, float damageMultiplier) {
     	if (TungstenMod.mc.player.getType().isIn(EntityTypeTags.FALL_DAMAGE_IMMUNE)) {
+    		System.out.println("IMMUNE");
     		return 0;
     	}
         float f = this.jumpBoost < 0 ? 0.0F : (float)(this.jumpBoost + 1);
@@ -1413,7 +1414,7 @@ public class Agent {
                 player.getPos().z == this.posZ ? "z" : this.posZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
             if (TungstenMod.EXECUTOR.isRunning()) {
-//            	player.setPosition(this.posX, this.posY, this.posZ);
+            	player.setPosition(this.posX, this.posY, this.posZ);
             	
             	TungstenMod.RENDERERS.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }

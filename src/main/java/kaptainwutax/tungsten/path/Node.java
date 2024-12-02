@@ -72,7 +72,7 @@ public class Node {
 		    result = result + Boolean.hashCode(this.input.sneak);
 		    result = result + Boolean.hashCode(this.input.sprint);
 //		    result = result + (Math.round(this.input.pitch));
-		    result = result + (Math.round(this.input.yaw));
+//		    result = result + (Math.round(this.input.yaw));
 		 }
 //	    if (round > 1) {
 //		    result = 34L * result + Double.hashCode(roundToPrecision(this.agent.getPos().x, round));
