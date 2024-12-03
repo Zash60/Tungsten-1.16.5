@@ -164,6 +164,7 @@ public class Node {
 																		(sneak || !jump ? 3 : 10)
 																		; j++) {
 																	if (newNode.agent.getPos().y < nextBlockNode.getBlockPos().getY() || !isMoving) break;
+//																	if (j > 3 && this.agent.getPos().distanceTo(newNode.agent.getPos()) < 0.2) break;
 																	newNode = new Node(newNode, world, new PathInput(forward, false, right, left, jump,
 																			sneak, sprint, this.agent.pitch, yaw), 
 																			jump ? new Color(0, 255, 255) : new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0)
@@ -251,10 +252,13 @@ public class Node {
 //									|| (this.agent.getPos().y - newNode.agent.getPos().y) < 0
 									))  continue;
 							for (boolean right : new boolean[]{false, true}) {
+								int j = 0;
 								while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) 
 										&& newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()) {
 										if (TungstenMod.PATHFINDER.stop) return nodes;
 										if (newNode.agent.isClimbing(world)) break;
+//										if (j > 3 && this.agent.getPos().distanceTo(newNode.agent.getPos()) < 0.2) break;
+										j++;
 										newNode = new Node(newNode, world, new PathInput(forward, back, right, false, false,
 												false, true, this.agent.pitch, yaw), new Color(back ? 220 : 0, 255, 255), this.cost + jumpCost);
 								}

@@ -5,7 +5,9 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.FenceBlock;
 import net.minecraft.block.PaneBlock;
+import net.minecraft.block.SlabBlock;
 import net.minecraft.block.WallBlock;
+import net.minecraft.block.enums.SlabType;
 import net.minecraft.block.enums.WallShape;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -66,6 +68,12 @@ public class BlockStateChecker {
 	public static boolean isSamePane(WorldView world, BlockPos pos) {
 	    Block block = world.getBlockState(pos).getBlock();
 	    return block instanceof PaneBlock;
+	}
+	
+	public static boolean isDoubleSlab(WorldView world, BlockPos pos) {
+	    BlockState state = world.getBlockState(pos);
+	    Block block = state.getBlock();
+	    return block instanceof SlabBlock && state.get(Properties.SLAB_TYPE) == SlabType.DOUBLE;
 	}
 
 

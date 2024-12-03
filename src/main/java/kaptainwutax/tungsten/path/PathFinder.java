@@ -103,7 +103,10 @@ public class PathFinder {
 			 renderPathCurrentlyExecuted();
 			if (blockPath.isPresent()) renderBlockPath(blockPath.get());
 			Node next = openSet.removeLowest();
-			if (shouldNodeBeSkiped(next, target, closed, true, blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingLongJump() || blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingNeo())) continue;
+			if (shouldNodeBeSkiped(next, target, closed, true, 
+					blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingLongJump()
+					|| blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingNeo()
+					|| blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX-1).isDoingCornerJump())) continue;
 
 			
 			if(TungstenMod.pauseKeyBinding.isPressed()) break;
