@@ -39,8 +39,8 @@ public class CornerJumpMovementHelper {
 	        int endX = endPos.getX();
 	        int endY = endPos.getY();
 	        int endZ = endPos.getZ();
-			boolean isEdgeOnX = endX - x < 3;
-			boolean isEdgeOnZ = endZ - z < 3;
+			boolean isEdgeOnX = Math.abs(endX - x) < 2;
+			boolean isEdgeOnZ = Math.abs(endZ - z) < 2;
 
 	        BlockPos.Mutable currPos = new BlockPos.Mutable();
 	        TungstenMod.TEST.clear(); // Clear visual markers
