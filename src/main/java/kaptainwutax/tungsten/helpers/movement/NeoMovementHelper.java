@@ -80,7 +80,8 @@ public class NeoMovementHelper {
 		BlockPos endPos, boolean isJumpingOneBlock, boolean shouldRender, boolean shouldSlow) {
 		if (!movementDir.isHorizontal())
 			throw new IllegalArgumentException("Only X and Z directions are allowed for movementDir");
-
+		if (Math.abs(startPos.getY() - endPos.getY()) > 1) return null;
+			
 		int endX = endPos.getX();
 		int endZ = endPos.getZ();
 		PathState pathState = new PathState(isJumpingOneBlock, shouldRender, shouldSlow);
