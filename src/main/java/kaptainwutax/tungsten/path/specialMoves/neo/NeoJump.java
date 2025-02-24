@@ -26,9 +26,9 @@ public class NeoJump {
 		Agent agent = parent.agent;
 		
 		Direction jumpTowardsDirection = DirectionHelper.getHorizontalDirectionFromPos(nextBlockNode.previous.getPos(true), nextBlockNode.getPos(true));
-		float jumpTowardsRotation = jumpTowardsDirection.asRotation();
+		float jumpTowardsRotation = jumpTowardsDirection.getPositiveHorizontalDegrees();
 		Direction neoDirection = nextBlockNode.getNeoSide();
-		float neoRotation = neoDirection.asRotation();
+		float neoRotation = neoDirection.getPositiveHorizontalDegrees();
 
 		float desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
         double distance = DistanceCalculator.getHorizontalEuclideanDistance(agent.getPos(), nextBlockNode.getPos(true));

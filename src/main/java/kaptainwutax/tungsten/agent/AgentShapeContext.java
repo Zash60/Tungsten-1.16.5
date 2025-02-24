@@ -1,5 +1,6 @@
 package kaptainwutax.tungsten.agent;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.EntityShapeContext;
 import net.minecraft.block.ShapeContext;
 
@@ -9,6 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.CollisionView;
 
 import java.util.function.Predicate;
 
@@ -34,7 +36,7 @@ public class AgentShapeContext implements ShapeContext {
     }
 
     protected AgentShapeContext(Agent agent) {
-        this(agent.input.sneaking, agent.box.minY, ItemStack.EMPTY, fluidState -> false);
+        this(agent.input.playerInput.sneak(), agent.box.minY, ItemStack.EMPTY, fluidState -> false);
     }
 
     @Override
@@ -56,5 +58,11 @@ public class AgentShapeContext implements ShapeContext {
     public boolean isAbove(VoxelShape shape, BlockPos pos, boolean defaultValue) {
         return this.minY > (double)pos.getY() + shape.getMax(Direction.Axis.Y) - (double)1.0E-5f;
     }
+
+	@Override
+	public VoxelShape getCollisionShape(BlockState state, CollisionView world, BlockPos pos) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 }

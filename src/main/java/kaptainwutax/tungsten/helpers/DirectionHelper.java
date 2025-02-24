@@ -14,10 +14,10 @@ public class DirectionHelper {
      * @param rotation rotation from Direction::asRotation function
      * @return yaw value calculated from Direction::asRotation function.
      */
-	public static float calcYawFromRotation(Direction direction) {
-		return calcYawFromRotation(direction.asRotation());
-	}
-	
+//	public static float calcYawFromRotation(Direction direction) {
+//		return calcYawFromRotation(direction.asRotation());
+//	}
+//	
 	
 	/**
      * Calculates the yaw from rotation.

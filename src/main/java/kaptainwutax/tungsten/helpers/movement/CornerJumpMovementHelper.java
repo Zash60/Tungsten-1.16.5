@@ -45,25 +45,24 @@ public class CornerJumpMovementHelper {
 	        BlockPos.Mutable currPos = new BlockPos.Mutable();
 	        TungstenMod.TEST.clear(); // Clear visual markers
 	        if (!isEdgeOnX && !isEdgeOnZ) return false;
-
+//	        if (isEdgeOnX && isEdgeOnZ) {
+//	        	
+//	        	return false;
+//	        }
+	        
 	        while (x != endX || y != endY || z != endZ) {
 	            if (TungstenMod.PATHFINDER.stop) return false;
+	            // Move x or z based on conditions
+	            if ((isEdgeOnZ || (isEdgeOnX && z == endZ)) && x != endX) {
+	                x = moveCoordinate(x, endX);
+	            } else if ((isEdgeOnX || (isEdgeOnZ && x == endX)) && z != endZ) {
+	                z = moveCoordinate(z, endZ);
+	            }
 
 	            currPos.set(x, y, z);
 
 	            if (!processStep(currPos)) {
-	                return false; // Path obstructed
-	            }
-	            
-	            if (isEdgeOnZ || isEdgeOnX && z == endZ) {
-		            x = moveCoordinate(x, endX);
-	            }
-	            
-
-	            currPos.set(x, y, z);
-
-	            if (!processStep(currPos)) {
-	                return false; // Path obstructed
+	            	return false; // Path obstructed
 	            }
 	            
 	            y = moveCoordinate(y, endY);
@@ -72,10 +71,6 @@ public class CornerJumpMovementHelper {
 
 	            if (!processStep(currPos)) {
 	                return false; // Path obstructed
-	            }
-	            
-	            if (isEdgeOnZ && x == endX || isEdgeOnX) {
-		            z = moveCoordinate(z, endZ);
 	            }
 	        }
 	        slowDownIfNeeded();

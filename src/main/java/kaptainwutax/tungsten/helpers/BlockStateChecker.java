@@ -21,6 +21,7 @@ import net.minecraft.block.SkullBlock;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.block.WallBlock;
+import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.block.enums.WallShape;
 import net.minecraft.fluid.Fluids;
@@ -121,10 +122,10 @@ public class BlockStateChecker {
 	}
 
 	public static boolean isGlassPaneConnected(BlockState state, WorldView world, BlockPos pos) {
-	    return state.get(Properties.NORTH) && isPane(world, pos.north())
-	        || state.get(Properties.SOUTH) && isPane(world, pos.south())
-	        || state.get(Properties.EAST) && isPane(world, pos.east())
-	        || state.get(Properties.WEST) && isPane(world, pos.west());
+	    return state.get(Properties.NORTH)
+	        || state.get(Properties.SOUTH)
+	        || state.get(Properties.EAST)
+	        || state.get(Properties.WEST);
 	}
 
 	public static boolean isPane(WorldView world, BlockPos pos) {
@@ -148,10 +149,22 @@ public class BlockStateChecker {
 	    Block block = state.getBlock();
 	    return block instanceof SlabBlock && state.get(Properties.SLAB_TYPE) == SlabType.DOUBLE;
 	}
+	
+	public static boolean isTrapdoor(BlockState state) {
+        return state.getBlock() instanceof TrapdoorBlock;
+    }
+	
+	public static boolean isTrapdoor(Block block) {
+        return block instanceof TrapdoorBlock;
+    }
 
     // Helper method to check if the block is an open trapdoor
 	public static boolean isOpenTrapdoor(BlockState state) {
-        return state.getBlock() instanceof TrapdoorBlock && state.get(Properties.OPEN);
+        return isTrapdoor(state) && state.get(Properties.OPEN);
+    }
+	
+	public static boolean isClosedBottomTrapdoor(BlockState state) {
+        return isTrapdoor(state) && state.get(Properties.BLOCK_HALF) == BlockHalf.BOTTOM && !state.get(Properties.OPEN);
     }
 
     // Helper method to check if the block is a bottom slab

@@ -12,7 +12,10 @@ import kaptainwutax.tungsten.helpers.blockPath.BlockPosShifter;
 import kaptainwutax.tungsten.helpers.movement.CornerJumpMovementHelper;
 import kaptainwutax.tungsten.helpers.movement.NeoMovementHelper;
 import kaptainwutax.tungsten.helpers.movement.StreightMovementHelper;
+import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
+import kaptainwutax.tungsten.render.Color;
+import kaptainwutax.tungsten.render.Cuboid;
 import kaptainwutax.tungsten.world.BetterBlockPos;
 import net.minecraft.block.AirBlock;
 import net.minecraft.block.Block;
@@ -27,6 +30,7 @@ import net.minecraft.block.LilyPadBlock;
 import net.minecraft.block.SeaPickleBlock;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.SlimeBlock;
+import net.minecraft.block.SnowBlock;
 import net.minecraft.block.StairsBlock;
 import net.minecraft.block.VineBlock;
 import net.minecraft.block.enums.SlabType;
@@ -170,6 +174,10 @@ public class BlockNode {
 	public boolean isDoingNeo() {
 		return this.isDoingNeo;
 	}
+	
+	public Direction getNeoSide() {
+		return this.neoSide;
+	}
 
 	public boolean isDoingCornerJump() {
 		return this.isDoingCornerJump;
@@ -210,12 +218,13 @@ public class BlockNode {
 		TungstenMod.TEST.clear();
 		boolean shouldRender = false;
 		boolean shouldSlow = false;
+		
 
 		boolean isStreightPossible = StreightMovementHelper.isPossible(world, start, end, shouldRender, shouldSlow);
 		
 		if (isStreightPossible) return true;
 		if (endNode == null) return false;
-
+		
 		boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
 		if (shouldCheckNeo) {
 			Direction neoDirection = NeoMovementHelper.getNeoDirection(world, start, end, shouldRender, shouldSlow);
@@ -295,7 +304,7 @@ public class BlockNode {
 		double heightDiff = this.y - child.y; // -1 is going up and +1 is going down, in negative y levels its reversed
 		double distance = DistanceCalculator.getHorizontalEuclideanDistance(getPos(true), child.getPos(true));
 
-		if (BlockStateChecker.isDoubleSlab(world, getBlockPos()))
+		if (BlockStateChecker.isDoubleSlab(world, getBlockPos()) || childBelowBlock instanceof SnowBlock)
 			return true;
 
 		// Check for air below
@@ -405,8 +414,7 @@ public class BlockNode {
 
 		double blockHeightDiff = currentBlockHeight - childBlockHeight; // Negative values means currentBlockHeight is
 																		// lower, and positive means currentBlockHeight
-																		// is higher
-
+								
 		// VoxelShape-based checks
 		if (!Double.isInfinite(blockHeightDiff) && !Double.isNaN(blockHeightDiff)) {
 			
@@ -419,8 +427,19 @@ public class BlockNode {
 					&& !world.getBlockState(child.getBlockPos()).isAir()) {
 				return true;
 			}
+
+			if (BlockStateChecker.isClosedBottomTrapdoor(childBlockState)) {
+				if (heightDiff >= -1 && distance <= 6.4) return false;
+				if (heightDiff == -2 && distance <= 4.4) return false;
+			}
+			
+			if (BlockStateChecker.isClosedBottomTrapdoor(currentBlockState)) {
+				if (heightDiff >= 0 && distance <= 6.4) return false;
+				if (heightDiff < 0 && BlockStateChecker.isTopSlab(childBlockState)) return true;
+			}
 			
 			if (blockHeightDiff != 0) {
+				
 				if (Math.abs(blockHeightDiff) > 0.5 && Math.abs(blockHeightDiff) <= 1.0) {
 					if (heightDiff < 0 && (blockShape.getMin(Axis.Y) == 0.0 && currentBlockHeight <= 1.0))
 						return true;
@@ -429,7 +448,7 @@ public class BlockNode {
 					if (heightDiff <= 0 && distance <= 5.3)
 						return false;
 				}
-
+				
 				if (Math.abs(blockHeightDiff) <= 0.5 && (blockShape.getMin(Axis.Y) == 0.0 && childBlockHeight == 1.0)) {
 					if (heightDiff == 0 && distance <= 5.4)
 						return false;

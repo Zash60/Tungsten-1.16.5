@@ -114,17 +114,17 @@ public class PathFinder {
 	            }
 	        }
 	
-	        if (shouldResetSearch(numNodesConsidered, blockPath, next, target)) {
-//	            resetSearch(next, world, blockPath, target, bestHeuristicSoFar);
-	            openSet = new BinaryHeapOpenSet();
-	            start = initializeStartNode(next, target);
-	            openSet.insert(start);
-	            continue;
-	        }
-	
-	        if ((numNodesConsidered & (timeCheckInterval - 1)) == 0) {
-	            handleTimeout(startTime, primaryTimeoutTime, next, target, start, bestHeuristicSoFar, player);
-	        }
+//	        if (shouldResetSearch(numNodesConsidered, blockPath, next, target)) {
+//	        	blockPath = resetSearch(next, world, blockPath, target, bestHeuristicSoFar);
+//	            openSet = new BinaryHeapOpenSet();
+//	            start = initializeStartNode(next, target);
+//	            openSet.insert(start);
+//	            continue;
+//	        }
+//	
+//	        if ((numNodesConsidered & (timeCheckInterval - 1)) == 0) {
+//	            handleTimeout(startTime, primaryTimeoutTime, next, target, start, bestHeuristicSoFar, player);
+//	        }
 	        
 	        RenderHelper.renderPathSoFar(next);
 	
@@ -218,7 +218,7 @@ public class PathFinder {
 	        zScale = 1;
 	    }else {
 	        xScale = 100;
-	        yScale = 100;
+	        yScale = 10;
 	        zScale = 100;
 	    }
 
@@ -247,7 +247,7 @@ public class PathFinder {
 	}
 	
 	private static double computeHeuristic(Vec3d position, boolean onGround, Vec3d target) {
-		double xzMultiplier = 1;
+		double xzMultiplier = 1.8;
 	    double dx = (position.x - target.x)*xzMultiplier;
 	    double dy = 0;
 	    if (target.y != Double.MIN_VALUE) {
@@ -364,6 +364,10 @@ public class PathFinder {
     private Optional<List<BlockNode>> findBlockPath(WorldView world, Vec3d target) {
         return kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder.search(world, target);
     }
+    
+    private Optional<List<BlockNode>> findBlockPath(WorldView world, BlockNode start, Vec3d target) {
+        return kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockSpacePathFinder.search(world, start, target);
+    }
 
     private double[] initializeBestHeuristics(Node start) {
         double[] bestHeuristicSoFar = new double[COEFFICIENTS.length];
@@ -418,17 +422,20 @@ public class PathFinder {
                AgentChecker.isAgentStationary(next.agent, 0.08);
     }
 
-    private void resetSearch(Node next, WorldView world, Optional<List<BlockNode>> blockPath, Vec3d target, double[] bestHeuristicSoFar) {
-        List<Node> path = constructPath(next);
-        TungstenMod.EXECUTOR.setPath(path);
-        NEXT_CLOSEST_BLOCKNODE_IDX = 1;
-        blockPath = findBlockPath(world, target);
+    private Optional<List<BlockNode>> resetSearch(Node next, WorldView world, Optional<List<BlockNode>> blockPath, Vec3d target, double[] bestHeuristicSoFar) {
+    	BlockNode lastNode = blockPath.get().getLast();
+    	lastNode.previous = null;
+        blockPath = findBlockPath(world, lastNode, target);
         if (blockPath.isPresent()) {
+            List<Node> path = constructPath(next);
+            TungstenMod.EXECUTOR.setPath(path);
+            NEXT_CLOSEST_BLOCKNODE_IDX = 1;
         	RenderHelper.renderBlockPath(blockPath.get(), NEXT_CLOSEST_BLOCKNODE_IDX);
-        	return;
+        	return blockPath;
         }
         Debug.logWarning("Failed!");
         stop = true;
+        return Optional.empty();
     }
 
     private void handleTimeout(long startTime, long primaryTimeoutTime, Node next, Vec3d target, Node start, double[] bestHeuristicSoFar, ClientPlayerEntity player) {
@@ -488,7 +495,7 @@ public class PathFinder {
 
         // Ladder-specific conditions
         boolean validLadderProximity = (isLadder || isBelowLadder) 
-            && nodePos.isWithinRangeOf(BlockPosShifter.getPosOnLadder(closestPos), 0.5, 0.5);
+            && nodePos.isWithinRangeOf(BlockPosShifter.getPosOnLadder(closestPos), 0.5, 0.6);
 
         // Tall block position conditions. Things like fences and walls
         boolean validTallBlockProximity = isBlockBelowTall 

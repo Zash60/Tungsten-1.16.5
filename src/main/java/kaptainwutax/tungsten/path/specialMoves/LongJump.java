@@ -9,6 +9,7 @@ import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.AgentChecker;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
+import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.path.Node;
 import kaptainwutax.tungsten.path.PathInput;
 import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
@@ -27,13 +28,12 @@ public class LongJump {
 		double distance = DistanceCalculator.getHorizontalEuclideanDistance(agent.getPos(), nextBlockNode.getPos(true));
 	    Node newNode = new Node(parent, world, new PathInput(false, false, false, false, false, false, false, agent.pitch, desiredYaw),
 	    				new Color(0, 255, 150), parent.cost + 0.1);
-
 	    // Go back if we are too close to the edge to jump
-	    if (distance > 4 && DistanceCalculator.getDistanceToEdge(newNode.agent) < 0.5 && AgentChecker.isAgentStationary(newNode.agent, 0.07)) {
-	        for (int j = 0; j < 5; j++) {
+	    if (distance > 4 && DistanceCalculator.getDistanceToEdge(newNode.agent) < 0.8 && AgentChecker.isAgentStationary(newNode.agent, 0.07)) {
+	        for (int j = 0; j < 6; j++) {
 	            Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.45, 0, -0.45);
 	        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
-	        	if (blockCollisions.findAny().isEmpty()) break;
+	        	if (j > 1 && blockCollisions.findAny().isEmpty()) break;
 	        	desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
 	            newNode = new Node(newNode, world, new PathInput(false, true, false, false, false, false, false, agent.pitch, desiredYaw),
 	            		new Color(0, 255, 150), newNode.cost + cost + 5);
@@ -44,12 +44,17 @@ public class LongJump {
         int limit = 0;
         double boxExpension = -0.001;
 		if (distance > 1.0) {
+			distance = DistanceCalculator.getHorizontalEuclideanDistance(newNode.agent.getPos(), nextBlockNode.getPos(true));
 	        // Go forward to edge and jump
 	        while (limit < 10) {
 	            Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(boxExpension, 0, boxExpension);
 	        	limit++;
-	        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
-	            if (blockCollisions.findAny().isEmpty()) jump = true;
+	        	if (distance > 3) {
+		        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
+		            if (blockCollisions.findAny().isEmpty()) jump = true;
+	        	} else {
+	        		if (DistanceCalculator.getDistanceToEdge(newNode.agent) < 0.6) jump = true;
+	        	}
 	            if (!newNode.agent.onGround) break;
 	
 	    		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));

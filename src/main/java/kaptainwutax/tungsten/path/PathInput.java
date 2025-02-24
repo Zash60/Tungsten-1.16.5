@@ -17,4 +17,42 @@ public class PathInput {
 		this.yaw = yaw;
 	}
 
+	@Override
+	public String toString() {
+		
+		StringBuilder string = new StringBuilder();
+
+		string.append("{\n");
+		string.append("forward: ");
+		string.append(forward);
+		string.append("\n");
+		string.append("back: ");
+		string.append(back);
+		string.append("\n");
+		string.append("right: ");
+		string.append(right);
+		string.append("\n");
+		string.append("left: ");
+		string.append(left);
+		string.append("\n");
+		string.append("jump: ");
+		string.append(jump);
+		string.append("\n");
+		string.append("sneak: ");
+		string.append(sneak);
+		string.append("\n");
+		string.append("sprint: ");
+		string.append(sprint);
+		string.append("\n");
+		string.append("pitch: ");
+		string.append(pitch);
+		string.append("\n");
+		string.append("yaw: ");
+		string.append(yaw);
+		string.append("\n");
+		string.append("}");
+		
+		return string.toString();
+	}
+	
 }

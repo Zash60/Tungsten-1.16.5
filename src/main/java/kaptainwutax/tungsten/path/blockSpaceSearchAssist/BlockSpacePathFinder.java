@@ -10,6 +10,7 @@ import java.util.Set;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.helpers.BlockStateChecker;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
@@ -58,7 +59,7 @@ public class BlockSpacePathFinder {
         int numNodes = 0;
         int timeCheckInterval = 1 << 6;
         long startTime = System.currentTimeMillis();
-        long primaryTimeoutTime = startTime + 8000000000L;
+        long primaryTimeoutTime = startTime + 800000L;
 		
 		TungstenMod.RENDERERS.clear();
 		Debug.logMessage("Searchin...");
@@ -165,16 +166,17 @@ public class BlockSpacePathFinder {
 	private static double computeHeuristic(Vec3d position, Vec3d target) {
 		double xzMultiplier = 1.2;
 	    double dx = (position.x - target.x)*xzMultiplier;
-	    double dy = (position.y - target.y)*5;
+	    double dy = DistanceCalculator.getHorizontalManhattanDistance(position, target) > 16 ? 0 : (position.y - target.y)*1.5;
 	    double dz = (position.z - target.z)*xzMultiplier;
-	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 20;
+	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 3;
 	}
 	
 	private static void updateNode(BlockNode current, BlockNode child, Vec3d target) {
 	    Vec3d childPos = child.getPos();
 	    double tentativeCost = child.cost + ActionCosts.WALK_ONE_BLOCK_COST; // Assuming uniform cost for each step
+	    tentativeCost += BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(child.getBlockPos())) ? 50 : 0; // Assuming uniform cost for each step
 
-	    double estimatedCostToGoal = computeHeuristic(childPos, target) + DistanceCalculator.getHorizontalEuclideanDistance(current.getPos(true), child.getPos(true)) * 2;
+	    double estimatedCostToGoal = computeHeuristic(childPos, target) + DistanceCalculator.getHorizontalEuclideanDistance(current.getPos(true), child.getPos(true)) * 4;
 
 	    child.previous = current;
 	    child.cost = tentativeCost;

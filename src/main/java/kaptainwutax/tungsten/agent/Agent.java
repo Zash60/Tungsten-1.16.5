@@ -66,6 +66,7 @@ import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.EntityTypeTags;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.PlayerInput;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -92,7 +93,7 @@ public class Agent {
         ImmutableMap.<EntityPose, EntityDimensions>builder()
         .put(EntityPose.STANDING, STANDING_DIMENSIONS)
         .put(EntityPose.SLEEPING, SLEEPING_DIMENSIONS)
-        .put(EntityPose.FALL_FLYING, EntityDimensions.changing(0.6f, 0.6f))
+        .put(EntityPose.GLIDING, EntityDimensions.changing(0.6f, 0.6f))
         .put(EntityPose.SWIMMING, EntityDimensions.changing(0.6f, 0.6f))
         .put(EntityPose.SPIN_ATTACK, EntityDimensions.changing(0.6f, 0.6f))
         .put(EntityPose.CROUCHING, EntityDimensions.changing(0.6f, 1.5f))
@@ -284,7 +285,7 @@ public class Agent {
         EntityPose newPose;
 
         if(this.fallFlying) {
-            newPose = EntityPose.FALL_FLYING;
+            newPose = EntityPose.GLIDING;
         } else {
             if(this.sleeping) {
                 newPose = EntityPose.SLEEPING;
@@ -292,7 +293,7 @@ public class Agent {
                 if(this.swimming) {
                     newPose = EntityPose.SWIMMING;
                 } else {
-                    if(this.input.sneaking) {
+                    if(this.input.playerInput.sneak()) {
                         newPose = EntityPose.CROUCHING;
                     } else {
                         newPose = EntityPose.STANDING;
@@ -341,7 +342,7 @@ public class Agent {
 
     public final float getEyeHeight(EntityPose pose, EntityDimensions dimensions) {
          return switch(pose) {
-            case SWIMMING, FALL_FLYING, SPIN_ATTACK -> 0.4F;
+            case SWIMMING, GLIDING, SPIN_ATTACK -> 0.4F;
             case CROUCHING -> 1.27F;
             case SLEEPING -> 0.2F;
             default -> 1.62F;
@@ -349,11 +350,11 @@ public class Agent {
     }
 
     public void tickMovementClientPlayer(WorldView world) {
-        boolean prevSneaking = this.input.sneaking;
+        boolean prevSneaking = this.input.playerInput.sneak();
         boolean wasWalking = this.isWalking();
 
         this.inSneakingPose = !this.swimming && this.wouldPoseNotCollide(world, EntityPose.CROUCHING)
-            && (this.input.sneaking || !this.sleeping && !this.wouldPoseNotCollide(world, EntityPose.STANDING));
+            && (this.input.playerInput.sneak() || !this.sleeping && !this.wouldPoseNotCollide(world, EntityPose.STANDING));
         this.input.tick(this.inSneakingPose || (this.pose == EntityPose.SWIMMING && !this.touchingWater), 0.3F);
 
         if(this.usingItem) {
@@ -363,7 +364,15 @@ public class Agent {
 
         if(this.ticksToNextAutojump > 0) {
             --this.ticksToNextAutojump;
-            this.input.jumping = true;
+            this.input.playerInput = new PlayerInput(
+            		this.input.playerInput.forward(),
+            		this.input.playerInput.backward(),
+            		this.input.playerInput.left(),
+            		this.input.playerInput.right(),
+        			true,
+        			this.input.playerInput.sneak(),
+        			this.input.playerInput.sprint()
+        		);
         }
 
         double width = this.dimensions.width();
@@ -391,7 +400,7 @@ public class Agent {
             boolean slowed = this.horizontalCollision && !this.collidedSoftly || this.touchingWater && !this.isSubmergedInWater;
 
             if(this.swimming) {
-                if(!this.onGround && !this.input.sneaking && slow || !this.touchingWater) {
+                if(!this.onGround && !this.input.playerInput.sneak() && slow || !this.touchingWater) {
                     this.setSprinting(false);
                 }
             } else if(slow || slowed) {
@@ -399,7 +408,7 @@ public class Agent {
             }
         }
 
-        if(this.touchingWater && this.input.sneaking) {
+        if(this.touchingWater && this.input.playerInput.sneak()) {
             this.velY -= 0.04F;
         }
 
@@ -427,7 +436,7 @@ public class Agent {
 
         this.sidewaysSpeed = this.input.movementSideways;
         this.forwardSpeed = this.input.movementForward;
-        this.jumping = this.input.jumping;
+        this.jumping = this.input.playerInput.jump();
 
         if(this.jumping) {
             double k = this.isInLava() ? this.getFluidHeight(FluidTags.LAVA) : this.getFluidHeight(FluidTags.WATER);
@@ -685,7 +694,7 @@ public class Agent {
 
             BlockState state = world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ));
 
-            if(this.velY < 0.0D && !state.isOf(Blocks.SCAFFOLDING) && this.input.sneaking) {
+            if(this.velY < 0.0D && !state.isOf(Blocks.SCAFFOLDING) && this.input.playerInput.sneak()) {
                 this.velY = 0.0D;
             }
         }
@@ -772,7 +781,7 @@ public class Agent {
         Block block = landingState.getBlock();
 
         if(movY != ajuY) {
-            if(block instanceof SlimeBlock && !this.input.sneaking) {
+            if(block instanceof SlimeBlock && !this.input.playerInput.sneak()) {
                 if(this.velY < 0.0D) {
                 	this.velY *= -1;
                 	this.slimeBounce = true;
@@ -784,7 +793,7 @@ public class Agent {
             }
         }
 
-        if(this.onGround && !this.input.sneaking) {
+        if(this.onGround && !this.input.playerInput.sneak()) {
             if(block instanceof MagmaBlock) {
                 //damage the entity
             } else if(block instanceof SlimeBlock) {
@@ -831,7 +840,7 @@ public class Agent {
     }
 
     public Vec3d adjustMovementForSneaking(WorldView world, MovementType type, Vec3d movement) {
-        if(this.input.sneaking && (type == MovementType.SELF || type == MovementType.PLAYER)
+        if(this.input.playerInput.sneak() && (type == MovementType.SELF || type == MovementType.PLAYER)
             && (this.onGround || this.fallDistance < this.stepHeight
             && !this.isSpaceEmpty(world, this.box.offset(0.0, this.fallDistance - this.stepHeight, 0.0)))) {
             double d = movement.x;
@@ -1087,7 +1096,7 @@ public class Agent {
                 } else if(landedState.getBlock() instanceof HayBlock) {
                     this.handleFallDamage(this.fallDistance, 0.2F);
                 } else if(landedState.getBlock() instanceof SlimeBlock) {
-                    this.handleFallDamage(this.fallDistance, this.input.sneaking ? 1.0F : 0.0F);
+                    this.handleFallDamage(this.fallDistance, this.input.playerInput.sneak() ? 1.0F : 0.0F);
                 } else if(landedState.getBlock() instanceof TurtleEggBlock) {
                     //eggs can break (1/3)
                     this.handleFallDamage(this.fallDistance, 1.0F);
@@ -1414,7 +1423,7 @@ public class Agent {
                 player.getPos().z == this.posZ ? "z" : this.posZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
             if (TungstenMod.EXECUTOR.isRunning()) {
-//            	player.setPosition(this.posX, this.posY, this.posZ);
+            	player.setPosition(this.posX, this.posY, this.posZ);
             	
             	TungstenMod.RENDERERS.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }
@@ -1481,8 +1490,8 @@ public class Agent {
             values.add(String.format("Submerged in water mismatch %s vs %s", player.isSubmergedInWater(), this.isSubmergedInWater));
         }
 
-	    if(this.input.sneaking != player.input.sneaking) {
-		    values.add(String.format("Sneaking mismatch %s vs %s", player.input.sneaking, this.input.sneaking));
+	    if(this.input.playerInput.sneak() != player.input.playerInput.sneak()) {
+		    values.add(String.format("Sneaking mismatch %s vs %s", player.input.playerInput.sneak(), this.input.playerInput.sneak()));
 	    }
 
         if(this.swimming != player.isSwimming()) {
@@ -1553,12 +1562,7 @@ public class Agent {
 
         agent.input.movementSideways = player.input.movementSideways;
         agent.input.movementForward = player.input.movementForward;
-        agent.input.pressingForward = player.input.pressingForward;
-        agent.input.pressingBack = player.input.pressingBack;
-        agent.input.pressingLeft = player.input.pressingLeft;
-        agent.input.pressingRight = player.input.pressingRight;
-        agent.input.jumping = player.input.jumping;
-        agent.input.sneaking = player.input.sneaking;
+        agent.input.playerInput = player.input.playerInput;
 
         agent.pose = player.getPose();
         agent.inSneakingPose = player.isInSneakingPose();
@@ -1593,7 +1597,7 @@ public class Agent {
         agent.hunger = player.getHungerManager();
         agent.sprinting = player.isSprinting();
         agent.swimming = player.isSwimming();
-        agent.fallFlying = player.isFallFlying();
+        agent.fallFlying = player.getAbilities().flying;
         agent.stepHeight = player.getStepHeight();
         agent.fallDistance = player.fallDistance;
         agent.touchingWater = player.isTouchingWater();
@@ -1628,12 +1632,7 @@ public class Agent {
 
         agent.input.movementSideways = other.input.movementSideways;
         agent.input.movementForward = other.input.movementForward;
-        agent.input.pressingForward = other.input.pressingForward;
-        agent.input.pressingBack = other.input.pressingBack;
-        agent.input.pressingLeft = other.input.pressingLeft;
-        agent.input.pressingRight = other.input.pressingRight;
-        agent.input.jumping = other.input.jumping;
-        agent.input.sneaking = other.input.sneaking;
+        agent.input.playerInput = other.input.playerInput;
 
         agent.pose = other.pose;
         agent.inSneakingPose = other.inSneakingPose;
