@@ -534,6 +534,7 @@ public class PathFinder {
         boolean isLadder = state.getBlock() instanceof LadderBlock;
         boolean isConnected = BlockStateChecker.isConnected(nodeBlockPos);
         boolean isBelowLadder = stateBelow.getBlock() instanceof LadderBlock;
+        boolean isBelowBottomSlab = BlockStateChecker.isBottomSlab(stateBelow);
         boolean isBelowGlassPane = (stateBelow.getBlock() instanceof PaneBlock) || (stateBelow.getBlock() instanceof StainedGlassPaneBlock);
         boolean isBlockBelowTall = closestBlockBelowHeight > 1.3;
         
@@ -548,11 +549,14 @@ public class PathFinder {
         boolean validTallBlockProximity = isBlockBelowTall 
             && nodePos.isWithinRangeOf(closestPos.getPos(true), 0.4, 0.58);
 
+        boolean validBottomSlabProximity = isBelowBottomSlab && distanceToClosestPos < 0.90
+                && heightDiff < 1.5;
+        
         // General position conditions
         boolean validStandardProximity = !isLadder && !isBelowLadder && !isBelowGlassPane 
             && !isBlockBelowTall
             && distanceToClosestPos < 0.90
-            && heightDiff < 2;
+            && heightDiff < 0.2;
 
 
         // Glass pane conditions
@@ -572,6 +576,7 @@ public class PathFinder {
 		    		|| validStandardProximity
 		    		|| validGlassPaneProximity
 		    		|| validSmallBlockProximity
+		    		|| validBottomSlabProximity
 	    		)
 //			    && (child.agent.getBlockPos().getY() == blockPath.get(closestPosIDX).getBlockPos().getY())
     			) {

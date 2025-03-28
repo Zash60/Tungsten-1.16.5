@@ -20,15 +20,17 @@ public class RenderHelper {
 		TungstenMod.BLOCK_PATH_RENDERER.clear();
 //		TungstenMod.RENDERERS.clear();
 //		TungstenMod.TEST.clear();
+		BlockNode previous = null;
 		for (Iterator<BlockNode> iterator = nodes.iterator(); iterator.hasNext();) {
 			BlockNode node = iterator.next();
 			
-			if (node.previous != null)
-			TungstenMod.BLOCK_PATH_RENDERER.add(new Line(new Vec3d(node.previous.x + 0.5, node.previous.y + 0.1, node.previous.z + 0.5), new Vec3d(node.x + 0.5, node.y + 0.1, node.z + 0.5), Color.RED));
+			if (previous != null)
+			TungstenMod.BLOCK_PATH_RENDERER.add(new Line(new Vec3d(previous.x + 0.5, previous.y + 0.1, previous.z + 0.5), new Vec3d(node.x + 0.5, node.y + 0.1, node.z + 0.5), Color.RED));
 			if (nodes.size() <= nextNodeIDX) nextNodeIDX = nodes.size()-1;
             TungstenMod.BLOCK_PATH_RENDERER.add(new Cuboid(node.getPos(true).subtract(0.1, 0, 0.1), new Vec3d(0.2D, 0.2D, 0.2D), 
             		(nodes.get(nextNodeIDX).equals(node)) ? Color.WHITE : Color.BLUE
             		));
+            previous = node;
 //            TungstenMod.BLOCK_PATH_RENDERER.add(new Cuboid(new Vec3d(node.getBlockPos().getX(), node.getBlockPos().getY(), node.getBlockPos().getZ()), new Vec3d(1.0D, 1.0D, 1.0D), 
 //            		(nodes.get(NEXT_CLOSEST_BLOCKNODE_IDX).equals(node)) ? Color.WHITE : Color.BLUE
 //            		));

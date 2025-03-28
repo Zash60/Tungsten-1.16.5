@@ -10,8 +10,10 @@ import java.util.Set;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.helpers.BlockShapeChecker;
 import kaptainwutax.tungsten.helpers.BlockStateChecker;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
+import kaptainwutax.tungsten.helpers.movement.StreightMovementHelper;
 import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -47,7 +49,7 @@ public class BlockSpacePathFinder {
 	
 	public static Optional<List<BlockNode>> search(WorldView world, Vec3d target) {
 		ClientPlayerEntity player = Objects.requireNonNull(TungstenMod.mc.player);
-		if (!world.getBlockState(player.getBlockPos()).isAir()) {
+		if (!world.getBlockState(player.getBlockPos()).isAir() && BlockShapeChecker.getShapeVolume(player.getBlockPos()) != 0) {
 			return search(world, new BlockNode(player.getBlockPos().up(), new Goal((int) target.x, (int) target.y, (int) target.z)), target);
 		}
 		return search(world, new BlockNode(player.getBlockPos(), new Goal((int) target.x, (int) target.y, (int) target.z)), target);
@@ -217,12 +219,17 @@ public class BlockSpacePathFinder {
 		Debug.logMessage("FOUND IT");
 		path.add(n);
 		while(n.previous != null) {
-			if (n.getPos(true).getY() - n.previous.getPos(true).getY() != 0) {
-				path.add(n);
-				path.add(n.previous);
-			} else if (n.previous.getPos(true).distanceTo(n.getPos(true)) > 1.44 || n.previous == null) {
-				path.add(n);
-				path.add(n.previous);
+			if (n.previous.previous != null) {
+				if (n.getPos(true).getY() - n.previous.getPos(true).getY() != 0) {
+					path.add(n);
+					path.add(n.previous);
+				} else if (
+						n.previous.getPos(true).distanceTo(n.getPos(true)) > 1.44 ||
+						!StreightMovementHelper.isPossible(TungstenMod.mc.world, n.getBlockPos(), n.previous.previous.getBlockPos())
+						) {
+					path.add(n);
+					if (n.previous != null) path.add(n.previous);
+				}
 			}
 			n = n.previous;
 		}

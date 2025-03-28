@@ -84,9 +84,10 @@ public class MixinDebugRenderer {
 	private static void renderCollection(Collection<Renderer> renderers, Tessellator tessellator, Frustum frustum,
 			double cameraX, double cameraY, double cameraZ) {
 		int count = 0;
-		Vec3d target = new Vec3d(cameraX, cameraY, cameraZ);
+//		Vec3d target = new Vec3d(cameraX, cameraY, cameraZ);
 		List<Renderer> sortedRenderers = new ArrayList<>(renderers);
-		sortedRenderers.sort(Comparator.comparingDouble(obj -> obj.toVec3d(obj.getPos()).distanceTo(target)));
+//		sortedRenderers.sort(Comparator.comparingDouble(obj -> obj.toVec3d(obj.getPos()).distanceTo(TungstenMod.mc.player.getPos())));
+		Collections.reverse(sortedRenderers);
 		try {
 			for (Renderer r : sortedRenderers) {
 				if (count >= MAX_RENDERERS_PER_CATEGORY) {
