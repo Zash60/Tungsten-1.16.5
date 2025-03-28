@@ -43,7 +43,9 @@ public class RenderHelper {
 		Node n = TungstenMod.EXECUTOR.getPath().getLast();
 		while (n.parent != null) {
 			TungstenMod.RUNNING_PATH_RENDERER.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
-			TungstenMod.RUNNING_PATH_RENDERER.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+			if (TungstenMod.renderPositonBoxes) {				
+				TungstenMod.RUNNING_PATH_RENDERER.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+			}
 			n = n.parent;
 		}
 	}
@@ -72,7 +74,9 @@ public class RenderHelper {
 	
 	public static void renderNodeConnection(Node child, Node parent) {
 	    TungstenMod.RUNNING_PATH_RENDERER.add(new Line(child.agent.getPos(), parent.agent.getPos(), child.color));
-	    TungstenMod.RUNNING_PATH_RENDERER.add(new Cuboid(child.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), child.color));
+	    if (TungstenMod.renderPositonBoxes) {
+	    	TungstenMod.RUNNING_PATH_RENDERER.add(new Cuboid(child.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), child.color));
+	    }
 	}
 	
 	public static void renderNodeConnection(BlockNode child, BlockNode parent) {

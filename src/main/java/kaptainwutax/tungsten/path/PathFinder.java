@@ -70,7 +70,7 @@ public class PathFinder {
 	
 	    long startTime = System.currentTimeMillis();
 	    long primaryTimeoutTime = startTime + 250L;
-	    int numNodesConsidered = 0;
+	    int numNodesConsidered = 1;
 	    int timeCheckInterval = 1 << 3;
 	    double minVelocity = 0.07;
 	
@@ -128,7 +128,7 @@ public class PathFinder {
 	        }
 	
 	        if ((numNodesConsidered & (timeCheckInterval - 1)) == 0) {
-	            handleTimeout(startTime, primaryTimeoutTime, next, target, start, bestHeuristicSoFar, player);
+	            handleTimeout(startTime, primaryTimeoutTime, next, target, start, bestHeuristicSoFar, player, closed);
 	        }
 	        
 	        if (numNodesConsidered % 20 == 0) {	        	
@@ -137,8 +137,10 @@ public class PathFinder {
 	
 	        failing = processNodeChildren(world, next, target, blockPath, openSet, closed, bestHeuristicSoFar);
 	        numNodesConsidered++;
-        	TungstenMod.TEST.clear();
-	        RenderHelper.renderNode(next);
+	        if (numNodesConsidered % 150 == 0) {
+	        	TungstenMod.TEST.clear();
+		        RenderHelper.renderNode(next);
+	        }
 //	        try {
 //				Thread.sleep(250);
 //			} catch (InterruptedException e) {
@@ -414,7 +416,17 @@ public class PathFinder {
     }
 
     private boolean tryExecutePath(Node node, Vec3d target, double minVelocity) {
-        if (!TungstenMod.EXECUTOR.isRunning() && AgentChecker.isAgentStationary(node.agent, minVelocity)) {
+		TungstenMod.TEST.clear();
+    	RenderHelper.renderPathSoFar(node);
+    	while (TungstenMod.EXECUTOR.isRunning()) {
+    		try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+        if (AgentChecker.isAgentStationary(node.agent, minVelocity)) {
             List<Node> path = constructPath(node);
             executePath(path);
             return true;
@@ -469,7 +481,7 @@ public class PathFinder {
         return Optional.empty();
     }
 
-    private void handleTimeout(long startTime, long primaryTimeoutTime, Node next, Vec3d target, Node start, double[] bestHeuristicSoFar, ClientPlayerEntity player) {
+    private void handleTimeout(long startTime, long primaryTimeoutTime, Node next, Vec3d target, Node start, double[] bestHeuristicSoFar, ClientPlayerEntity player, Set<Vec3d> closed) {
         long now = System.currentTimeMillis();
         Optional<List<Node>> result = bestSoFar(true, 0, start);
 
@@ -482,6 +494,7 @@ public class PathFinder {
             TungstenMod.EXECUTOR.setPath(result.get());
             RenderHelper.renderPathCurrentlyExecuted();
             clearParentsForBestSoFar(result.get().getLast());
+            closed = new HashSet<Vec3d>();
         }
     }
 
@@ -538,7 +551,7 @@ public class PathFinder {
         // General position conditions
         boolean validStandardProximity = !isLadder && !isBelowLadder && !isBelowGlassPane 
             && !isBlockBelowTall
-            && distanceToClosestPos < 1.02
+            && distanceToClosestPos < 0.90
             && heightDiff < 2;
 
 

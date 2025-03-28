@@ -91,8 +91,13 @@ public class PathExecutor {
 			    options.sneakKey.setPressed(node.input.sneak);
 			    options.sprintKey.setPressed(node.input.sprint);
 		    }
+		    if (!TungstenMod.RUNNING_PATH_RENDERER.isEmpty() && this.tick != 0) {
+		    	TungstenMod.RUNNING_PATH_RENDERER.remove(TungstenMod.RUNNING_PATH_RENDERER.toArray()[TungstenMod.RUNNING_PATH_RENDERER.size()-1]);
+		    	if (TungstenMod.renderPositonBoxes) {
+			    	TungstenMod.RUNNING_PATH_RENDERER.remove(TungstenMod.RUNNING_PATH_RENDERER.toArray()[TungstenMod.RUNNING_PATH_RENDERER.size()-1]);
+		    	}
+		    }
 	    }
-
 	    this.tick++;
     }
 

@@ -52,12 +52,13 @@ public class TungstenMod implements ClientModInitializer {
 	public static KeyBinding runBlockSearchKeyBinding;
 	public static KeyBinding createGoalKeyBinding;
     private static CommandExecutor _commandExecutor;
+    public static boolean renderPositonBoxes = true;
 	
 	
 	static {
-//        MOD_META = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow().getMetadata();
+		// MOD_META = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow().getMetadata();
         NAME = "Tungsten";
-        //DEV_BUILD = MOD_META.getCustomValue(TungstenMod.MOD_ID + ":devbuild").getAsString();
+        // DEV_BUILD = MOD_META.getCustomValue(TungstenMod.MOD_ID + ":devbuild").getAsString();
         LOG = LoggerFactory.getLogger(NAME);
 		
 	}
@@ -99,16 +100,16 @@ public class TungstenMod implements ClientModInitializer {
         	
         	boolean isRunning = TungstenMod.PATHFINDER.active || TungstenMod.EXECUTOR.isRunning();
         	if (!isRunning) {
-	        	if (TungstenMod.BLOCK_PATH_RENDERER.isEmpty()) {
+	        	if (!TungstenMod.BLOCK_PATH_RENDERER.isEmpty()) {
 	        		TungstenMod.BLOCK_PATH_RENDERER.clear();
 	        	}
-	        	if (TungstenMod.RUNNING_PATH_RENDERER.isEmpty()) {
+	        	if (!TungstenMod.RUNNING_PATH_RENDERER.isEmpty()) {
 					TungstenMod.RUNNING_PATH_RENDERER.clear();
 	        	}
-	        	if (TungstenMod.RENDERERS.isEmpty()) {
+	        	if (!TungstenMod.RENDERERS.isEmpty()) {
 					TungstenMod.RENDERERS.clear();
 	        	}
-	        	if (TungstenMod.TEST.isEmpty()) {
+	        	if (!TungstenMod.TEST.isEmpty()) {
 					TungstenMod.TEST.clear();
 	        	}
         	}
