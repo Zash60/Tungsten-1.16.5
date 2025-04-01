@@ -226,22 +226,22 @@ public class BlockNode {
 		if (isStreightPossible) return true;
 		if (endNode == null) return false;
 		
-		boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
-		if (shouldCheckNeo) {
-			Direction neoDirection = NeoMovementHelper.getNeoDirection(world, start, end, shouldRender, shouldSlow);
-			if (neoDirection != null) {
-				endNode.isDoingNeo = true;
-				endNode.neoSide = neoDirection;
-				endNode.isDoingCornerJump = false;
-				return true;
-			}
-		}
-		boolean isCornerJumpPossible = CornerJumpMovementHelper.isPossible(world, start, end, shouldRender, shouldSlow);
-		if (isCornerJumpPossible) {
-			endNode.isDoingNeo = false;
-			endNode.isDoingCornerJump = true;
-			return true;
-		}
+//		boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
+//		if (shouldCheckNeo) {
+//			Direction neoDirection = NeoMovementHelper.getNeoDirection(world, start, end, shouldRender, shouldSlow);
+//			if (neoDirection != null) {
+//				endNode.isDoingNeo = true;
+//				endNode.neoSide = neoDirection;
+//				endNode.isDoingCornerJump = false;
+//				return true;
+//			}
+//		}
+//		boolean isCornerJumpPossible = CornerJumpMovementHelper.isPossible(world, start, end, shouldRender, shouldSlow);
+//		if (isCornerJumpPossible) {
+//			endNode.isDoingNeo = false;
+//			endNode.isDoingCornerJump = true;
+//			return true;
+//		}
 
 		return false;
 	}
@@ -310,6 +310,7 @@ public class BlockNode {
 			return true;
 
 		BlockState currentBlockState = world.getBlockState(getBlockPos());
+		BlockState childAboveState = world.getBlockState(child.getBlockPos().up());
 		BlockState childState = world.getBlockState(child.getBlockPos());
 		BlockState childBelowState = world.getBlockState(child.getBlockPos().down());
 		Block currentBlock = currentBlockState.getBlock();
@@ -318,6 +319,19 @@ public class BlockNode {
 		double heightDiff = this.y - child.y; // -1 is going up and +1 is going down, in negative y levels its reversed
 		double distance = DistanceCalculator.getHorizontalEuclideanDistance(getPos(true), child.getPos(true));
 
+
+//		if (BlockStateChecker.isAnyWater(currentBlockState)) {
+//			if (distance > 1) return true;
+//			if (!wasCleared(world, getBlockPos(), child.getBlockPos())) return true;
+//			return false;
+//		}
+		if (BlockStateChecker.isAnyWater(childState)) {
+			if (distance > 1 || heightDiff > 1) return true;
+			if (!wasCleared(world, getBlockPos(), child.getBlockPos())) return true;
+			return false;
+		}
+		if (BlockStateChecker.isAnyWater(childState) && !childAboveState.isAir()) return true;
+		
 		if (BlockStateChecker.isDoubleSlab(world, getBlockPos()) || childBelowBlock instanceof SnowBlock)
 			return true;
 
@@ -340,6 +354,10 @@ public class BlockNode {
 		// Vine checks
 		if ((childBelowBlock instanceof VineBlock || childBlock instanceof VineBlock)
 				&& wasCleared(world, getBlockPos(), child.getBlockPos()) && distance < 6.3 && heightDiff >= -1) {
+			return false;
+		}
+		if ((childBelowBlock instanceof VineBlock || childBlock instanceof VineBlock)
+				&& distance < 2.3 && heightDiff == 0) {
 			return false;
 		}
 
@@ -448,6 +466,12 @@ public class BlockNode {
 
 		double blockHeightDiff = currentBlockHeight - childBlockHeight; // Negative values means currentBlockHeight is
 																		// lower, and positive means currentBlockHeight
+
+
+		if (BlockStateChecker.isAnyWater(currentBlockState)) {
+			if (distance >= 2) return true;
+			return false;
+		}
 		
 		if (isBlockBelowTall && heightDiff > 0) return true;
 								
@@ -532,9 +556,6 @@ public class BlockNode {
 
 		// Large height drop
 		if (heightDiff > -1 && distance >= 6)
-			return true;
-
-		if (BlockStateChecker.isWater(currentBlockState) && distance >= 2)
 			return true;
 
 		// Bottom slab checks

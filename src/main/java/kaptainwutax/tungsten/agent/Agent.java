@@ -252,7 +252,7 @@ public class Agent {
     private void updateSubmergedInWaterState(WorldView world) {
         this.isSubmergedInWater = this.isSubmergedIn(FluidTags.WATER);
         this.submergedFluids.clear();
-        double d = this.getEyeY() - 0.1111111119389534D;
+        double d = this.getEyeY();
 
         BlockPos blockPos = new BlockPos((int) this.posX, (int) d, (int) this.posZ);
         FluidState fluidState = world.getFluidState(blockPos);

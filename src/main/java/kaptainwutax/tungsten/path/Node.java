@@ -10,12 +10,16 @@ import com.google.common.collect.Streams;
 
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.agent.Agent;
+import kaptainwutax.tungsten.helpers.BlockStateChecker;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.helpers.MathHelper;
 import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
 import kaptainwutax.tungsten.path.specialMoves.CornerJump;
+import kaptainwutax.tungsten.path.specialMoves.DivingMove;
+import kaptainwutax.tungsten.path.specialMoves.ExitWaterMove;
 import kaptainwutax.tungsten.path.specialMoves.LongJump;
+import kaptainwutax.tungsten.path.specialMoves.SwimmingMove;
 import kaptainwutax.tungsten.path.specialMoves.neo.NeoJump;
 import kaptainwutax.tungsten.render.Color;
 import net.minecraft.block.BlockState;
@@ -109,6 +113,14 @@ public class Node {
     	
 	    sortNodesByYaw(nodes, target);
 
+	    if (agent.touchingWater && BlockStateChecker.isAnyWater(world.getBlockState(nextBlockNode.getBlockPos()))) {
+	    	if (world.getBlockState(nextBlockNode.getBlockPos().up()).isAir()) nodes.add(SwimmingMove.generateMove(this, nextBlockNode));
+	    	else  nodes.add(DivingMove.generateMove(this, nextBlockNode));
+	    }
+	    if (agent.touchingWater && world.getBlockState(nextBlockNode.getBlockPos()).isAir()) {
+	    	nodes.add(ExitWaterMove.generateMove(this, nextBlockNode));
+	    }
+	    
 	    if (agent.onGround) {
 	    	if (nextBlockNode.isDoingNeo()) {
 	    		nodes.add(NeoJump.generateMove(this, nextBlockNode));
@@ -127,7 +139,9 @@ public class Node {
 	    Node n = this.parent;
 	    if (n != null && (n.agent.isInLava() || agent.isInLava() || (agent.fallDistance > 
 	    this.agent.getPos().y - nextBlockNode.getBlockPos().getY()+2
-	    && !agent.slimeBounce && !agent.touchingWater))) {
+	    && !agent.slimeBounce 
+//	    && !agent.touchingWater
+	    ))) {
 	        return true;
 	    }
 	    return false;
@@ -192,6 +206,7 @@ public class Node {
 	                Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
 	                if (blockCollisions.findAny().isEmpty() && isDoingLongJump) jump = true;
 //	                if (!newNode.agent.onGround && sneak) continue;
+	                if (newNode.agent.touchingWater && sneak && newNode.agent.getBlockPos().getY() == nextBlockNode.getBlockPos().getY()) continue;
 	                newNode = new Node(newNode, world, new PathInput(forward, false, right, left, jump, sneak, sprint, agent.pitch, yaw),
 	                        jump ? new Color(0, 255, 255) : new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);
 	            }

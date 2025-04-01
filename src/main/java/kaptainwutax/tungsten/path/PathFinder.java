@@ -73,7 +73,7 @@ public class PathFinder {
 	    long primaryTimeoutTime = startTime + 250L;
 	    int numNodesConsidered = 1;
 	    int timeCheckInterval = 1 << 3;
-	    double minVelocity = 0.07;
+	    double minVelocity = BlockStateChecker.isAnyWater(world.getBlockState(new BlockPos((int) target.getX(), (int) target.getY(), (int) target.getZ()))) ? 0.2 :  0.07;
 	
 	    ClientPlayerEntity player = Objects.requireNonNull(TungstenMod.mc.player);
 	    if (player.getPos().distanceTo(target) < 1.0) {
@@ -251,6 +251,10 @@ public class PathFinder {
 	        xScale = 1;
 	        yScale = 10000;
 	        zScale = 1;
+	    } else if (n.agent.touchingWater) {
+	        xScale = 1000;
+	        yScale = 100;
+	        zScale = 1000;
 	    } else {
 	        xScale = 100;
 	        yScale = 10;
@@ -413,6 +417,8 @@ public class PathFinder {
     }
     
     private boolean isPathComplete(Node node, Vec3d target, boolean failing) {
+    	if (BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(new BlockPos((int) target.getX(), (int) target.getY(), (int) target.getZ()))))
+    		return node.agent.getPos().squaredDistanceTo(target) <= 0.9D;
         return node.agent.getPos().squaredDistanceTo(target) <= 0.2D && !failing;
     }
 
@@ -505,13 +511,17 @@ public class PathFinder {
         Node lastChild = null;
     	for (Node child : parent.getChildren(world, target, blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX))) {
             if (stop) break;
-            if (shouldSkipChild(child, target, closed, blockPath) 
-            		|| (lastChild != null 
+            if (
+//            		shouldSkipChild(child, target, closed, blockPath) 
+//            		||
+            		(lastChild != null 
 	            		&& lastChild.agent.getPos().distanceTo(child.agent.getPos()) < 0.07)
             		|| blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingNeo() 
             			&& !child.agent.onGround
-            		|| blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingLongJump() 
-            			&& !child.agent.onGround
+            			// This makes normal movement outside of parkour slower.
+            			// TODO: Add option to turn this on and off
+//            		|| blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingLongJump() 
+//            			&& !child.agent.onGround
             		) continue;
 
             updateNode(world, parent, child, target, blockPath.get());
@@ -540,7 +550,8 @@ public class PathFinder {
         double closestBlockVolume = BlockShapeChecker.getShapeVolume(closestPos.getBlockPos());
         double distanceToClosestPos = nodePos.distanceTo(closestPos.getPos(true));
         int heightDiff = closestPos.getJumpHeight((int) Math.ceil(nodePos.y), closestPos.y);
-        
+
+        boolean isWater = BlockStateChecker.isAnyWater(state);
         boolean isLadder = state.getBlock() instanceof LadderBlock;
         boolean isConnected = BlockStateChecker.isConnected(nodeBlockPos);
         boolean isBelowLadder = stateBelow.getBlock() instanceof LadderBlock;
@@ -548,6 +559,7 @@ public class PathFinder {
         boolean isBelowGlassPane = (stateBelow.getBlock() instanceof PaneBlock) || (stateBelow.getBlock() instanceof StainedGlassPaneBlock);
         boolean isBlockBelowTall = closestBlockBelowHeight > 1.3;
         
+        boolean validWaterProximity = isWater && nodePos.isWithinRangeOf(BlockPosShifter.getPosOnLadder(closestPos), 0.9, 1.2);
         // Agent state conditions
         boolean agentOnGroundOrClimbingOrOnTallBlock = node.agent.onGround || node.agent.isClimbing(world) || isBelowLadder || isBlockBelowTall;
 
@@ -576,7 +588,7 @@ public class PathFinder {
         
         
     	if (closestPosIDX+1 > NEXT_CLOSEST_BLOCKNODE_IDX && closestPosIDX +1 < blockPath.size()
-    			&& !isConnected
+    			&& ( validWaterProximity || !isConnected
 //    			&& BlockNode.wasCleared(world, nodeBlockPos, blockPath.get(closestPosIDX+1).getBlockPos())
     			&& agentOnGroundOrClimbingOrOnTallBlock
     			&& (
@@ -588,6 +600,7 @@ public class PathFinder {
 		    		|| validBottomSlabProximity
 	    		)
 //			    && (child.agent.getBlockPos().getY() == blockPath.get(closestPosIDX).getBlockPos().getY())
+    			)
     			) {
 	    		NEXT_CLOSEST_BLOCKNODE_IDX = closestPosIDX+1;
 	        	RenderHelper.renderBlockPath(blockPath, NEXT_CLOSEST_BLOCKNODE_IDX);

@@ -102,5 +102,40 @@ public class DistanceCalculator {
 
         return MathHelper.clamp(distance, 0.0, 1.0); // Ensure distance is within block bounds
     }
+    
+    /**
+	 * Returns jump height.
+	 * 
+	 * @param from
+	 * @param to
+	 * @return positive is going up and negative is going down
+	 */
+	public static double getJumpHeight(double from, double to) {
+		
+		double diff = to - from;
+		
+		// if `to` is higher then `from` return value should be positive
+		if (to > from) {
+			return diff > 0 ? diff : diff * -1;
+		}
+		return diff > 0 ? diff * -1 : diff;
+	}
 
+    /**
+	 * Returns jump height.
+	 * 
+	 * @param from
+	 * @param to
+	 * @return positive is going up and negative is going down
+	 */
+	public static int getJumpHeight(int from, int to) {
+		
+		int diff = to - from;
+		
+		// if `to` is higher then `from` return value should be positive
+		if (to > from) {
+			return diff > 0 ? diff : diff * -1;
+		}
+		return diff > 0 ? diff * -1 : diff;
+	}
 }

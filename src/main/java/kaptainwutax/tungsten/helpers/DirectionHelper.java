@@ -45,6 +45,20 @@ public class DirectionHelper {
     }
 	
 	/**
+     * Calculates the pitch from origin Vec3d to destination Vec3d positions.
+     * 
+     * @param orig origin position
+     * @param dest destination position
+     * @return pitch value calculated from origin Vec3d to destination Vec3d positions.
+     */
+	public static double calcPitchFromVec3d(Vec3d orig, Vec3d dest) {
+	    double deltaY = orig.y - dest.y;
+	    double distance = Math.sqrt(Math.pow(orig.x - dest.x, 2) + Math.pow(orig.z - dest.z, 2));
+	    double pitch = Math.atan2(deltaY, distance);
+	    return pitch * 180.0 / Math.PI;
+	}
+	
+	/**
      * Calculates the horizontal direction from origin Vec3d to destination Vec3d positions.
      * 
      * @param orig origin position
