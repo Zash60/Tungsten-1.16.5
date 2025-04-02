@@ -305,10 +305,12 @@ public class PathFinder {
 	    if (child.agent.horizontalCollision) {
 	        collisionScore += 2500 + (Math.abs(current.agent.velZ - child.agent.velZ) + Math.abs(current.agent.velX - child.agent.velX)) * 120;
 	    }
-//	    if (child.agent.touchingWater) {
-////	    	collisionScore = 20000^20;
-//	    	collisionScore += 2000;
-//	    }
+	    if (child.agent.touchingWater) {
+//	    	collisionScore = 20000^20;
+	    	if (BlockStateChecker.isAnyWater(world.getBlockState(blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX).getBlockPos()))) collisionScore -= 2000;
+//	    	else collisionScore += 2000;
+	    	
+	    }
 	    if (child.agent.isClimbing(TungstenMod.mc.world)) {
 //	    	collisionScore *= 20000;
 	    	collisionScore -= 2;

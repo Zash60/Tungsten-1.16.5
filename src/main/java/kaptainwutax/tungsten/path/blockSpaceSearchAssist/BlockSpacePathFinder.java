@@ -225,9 +225,10 @@ public class BlockSpacePathFinder {
 		        BlockState state = TungstenMod.mc.world.getBlockState(n.getBlockPos());
 		        boolean isWater = BlockStateChecker.isAnyWater(state);
 				if (n.getPos(true).getY() - n.previous.getPos(true).getY() != 0) {
-					if (isWater
-							&& !StreightMovementHelper.isPossible(TungstenMod.mc.world, n.getBlockPos(), n.previous.previous.getBlockPos())) {
+					if (isWater && !StreightMovementHelper.isPossible(TungstenMod.mc.world, n.getBlockPos(), n.previous.previous.getBlockPos()))
+					{
 						path.add(n);
+						path.add(n.previous.previous);
 					} else if (!isWater) {
 						path.add(n);
 						path.add(n.previous);

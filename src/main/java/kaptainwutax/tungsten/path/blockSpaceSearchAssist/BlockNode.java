@@ -226,22 +226,22 @@ public class BlockNode {
 		if (isStreightPossible) return true;
 		if (endNode == null) return false;
 		
-		boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
-		if (shouldCheckNeo) {
-			Direction neoDirection = NeoMovementHelper.getNeoDirection(world, start, end, shouldRender, shouldSlow);
-			if (neoDirection != null) {
-				endNode.isDoingNeo = true;
-				endNode.neoSide = neoDirection;
-				endNode.isDoingCornerJump = false;
-				return true;
-			}
-		}
-		boolean isCornerJumpPossible = CornerJumpMovementHelper.isPossible(world, start, end, shouldRender, shouldSlow);
-		if (isCornerJumpPossible) {
-			endNode.isDoingNeo = false;
-			endNode.isDoingCornerJump = true;
-			return true;
-		}
+//		boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
+//		if (shouldCheckNeo) {
+//			Direction neoDirection = NeoMovementHelper.getNeoDirection(world, start, end, shouldRender, shouldSlow);
+//			if (neoDirection != null) {
+//				endNode.isDoingNeo = true;
+//				endNode.neoSide = neoDirection;
+//				endNode.isDoingCornerJump = false;
+//				return true;
+//			}
+//		}
+//		boolean isCornerJumpPossible = CornerJumpMovementHelper.isPossible(world, start, end, shouldRender, shouldSlow);
+//		if (isCornerJumpPossible) {
+//			endNode.isDoingNeo = false;
+//			endNode.isDoingCornerJump = true;
+//			return true;
+//		}
 
 		return false;
 	}

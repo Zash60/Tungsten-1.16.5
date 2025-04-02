@@ -20,8 +20,10 @@ import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.mixin.AccessorEntity;
 import kaptainwutax.tungsten.mixin.AccessorLivingEntity;
+import kaptainwutax.tungsten.path.Node;
 import kaptainwutax.tungsten.path.PathInput;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cube;
@@ -1106,9 +1108,10 @@ public class Agent {
             }
 
             this.fallDistance = 0.0F;
-        } else if(heightDifference < 0.0D) {
-            this.fallDistance -= (float)heightDifference;
-        }
+        } 
+//        else if(heightDifference < 0.0D) {
+//            this.fallDistance -= (float)heightDifference;
+//        }
     }
 
     public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
@@ -1423,9 +1426,11 @@ public class Agent {
                 player.getPos().z == this.posZ ? "z" : this.posZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
             if (TungstenMod.EXECUTOR.isRunning()) {
-            	player.setPosition(this.posX, this.posY, this.posZ);
-            	
-            	TungstenMod.RENDERERS.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
+//            	player.setPosition(this.posX, this.posY, this.posZ);
+
+            	Node node = TungstenMod.EXECUTOR.getCurrentNode();
+            	RenderHelper.renderNode(node, TungstenMod.ERROR);
+            	TungstenMod.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }
         }
 
@@ -1439,12 +1444,13 @@ public class Agent {
                 player.getVelocity().z == this.velZ ? "z" : this.velZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
             if (TungstenMod.EXECUTOR.isRunning()) {
-//            	TungstenMod.EXECUTOR.stop = true;
-//            	TungstenMod.PATHFINDER.stop = true;
-//            	player.setVelocity(0, 0, 0);
-            	player.setVelocity(this.velX, this.velY, this.velZ);
-            	
-            	TungstenMod.RENDERERS.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
+            	TungstenMod.EXECUTOR.stop = true;
+            	TungstenMod.PATHFINDER.stop = true;
+            	player.setVelocity(0, 0, 0);
+//            	player.setVelocity(this.velX, this.velY, this.velZ);
+            	Node node = TungstenMod.EXECUTOR.getCurrentNode();
+            	RenderHelper.renderNode(node, TungstenMod.ERROR);
+            	TungstenMod.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }
         }
 

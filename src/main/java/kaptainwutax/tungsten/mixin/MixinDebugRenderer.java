@@ -77,6 +77,9 @@ public class MixinDebugRenderer {
 
 		if (!TungstenMod.TEST.isEmpty())
 			renderCollection(TungstenMod.TEST, tessellator, frustum, cameraX, cameraY, cameraZ);
+		
+		if (!TungstenMod.ERROR.isEmpty())
+			renderCollection(TungstenMod.ERROR, tessellator, frustum, cameraX, cameraY, cameraZ);
 
 		RenderSystem.enableBlend();
 	}

@@ -40,6 +40,7 @@ public class TungstenMod implements ClientModInitializer {
 	public static Collection<Renderer> BLOCK_PATH_RENDERER = Collections.synchronizedCollection(new ArrayList<>());
 	public static Collection<Renderer> RUNNING_PATH_RENDERER = Collections.synchronizedCollection(new ArrayList<>());
 	public static Collection<Renderer> RENDERERS = Collections.synchronizedCollection(new ArrayList<>());
+	public static Collection<Renderer> ERROR = Collections.synchronizedCollection(new ArrayList<>());
 	public static Collection<Renderer> TEST = Collections.synchronizedCollection(new ArrayList<>());
 	public static Vec3d TARGET = new Vec3d(0.5D, 10.0D, 0.5D);
 	public static clickModeEnum clickMode = clickModeEnum.OFF;
@@ -109,9 +110,12 @@ public class TungstenMod implements ClientModInitializer {
 	        	if (!TungstenMod.RENDERERS.isEmpty()) {
 					TungstenMod.RENDERERS.clear();
 	        	}
-//	        	if (!TungstenMod.TEST.isEmpty()) {
-//					TungstenMod.TEST.clear();
-//	        	}
+	        	if (!TungstenMod.TEST.isEmpty()) {
+					TungstenMod.TEST.clear();
+	        	}
+	        	if (!TungstenMod.ERROR.isEmpty()) {
+	        		TungstenMod.ERROR.clear();
+	        	}
         	}
         	if (clickMode != clickModeEnum.OFF && mc.options.useKey.isPressed() && !isRunning) {
         		

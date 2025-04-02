@@ -205,7 +205,11 @@ public class Node {
 	                Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.001, 0, -0.001);
 	                Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
 	                if (blockCollisions.findAny().isEmpty() && isDoingLongJump) jump = true;
-//	                if (!newNode.agent.onGround && sneak) continue;
+	                if (!newNode.agent.touchingWater && !newNode.agent.onGround && sneak) continue;
+	                if (!newNode.agent.touchingWater && sneak && jump) continue;
+	                if (!newNode.agent.touchingWater && (sneak && sprint)) continue;
+	                if (!newNode.agent.touchingWater && sneak && (right || left) && forward) continue;
+	                if (!newNode.agent.touchingWater && sneak && Math.abs(newNode.parent.agent.yaw - newNode.agent.yaw) > 80) continue;
 	                if (newNode.agent.touchingWater && (sneak || jump) && newNode.agent.getBlockPos().getY() == nextBlockNode.getBlockPos().getY()) continue;
 	                if (newNode.agent.touchingWater && jump && newNode.agent.getBlockPos().getY() > nextBlockNode.getBlockPos().getY()) continue;
 	                newNode = new Node(newNode, world, new PathInput(forward, false, right, left, jump, sneak, sprint, agent.pitch, yaw),

@@ -32,6 +32,11 @@ public class PathExecutor {
 	public List<Node> getPath() {
 		return this.path;
 	}
+	
+	public Node getCurrentNode() {
+		if (this.tick >= this.path.size()) return this.path.get(this.path.size()-1);
+		return this.path.get(this.tick);
+	}
 
 	public boolean isRunning() {
         return this.path != null && this.tick <= this.path.size();

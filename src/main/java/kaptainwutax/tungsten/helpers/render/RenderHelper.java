@@ -1,5 +1,6 @@
 package kaptainwutax.tungsten.helpers.render;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -9,6 +10,7 @@ import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
 import kaptainwutax.tungsten.render.Line;
+import kaptainwutax.tungsten.render.Renderer;
 import net.minecraft.util.math.Vec3d;
 
 /**
@@ -72,6 +74,10 @@ public class RenderHelper {
 	
 	public static void renderNode(Node n) {
 		TungstenMod.RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+	}
+	
+	public static void renderNode(Node n, Collection<Renderer> renderer) {
+		renderer.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
 	}
 	
 	public static void renderNodeConnection(Node child, Node parent) {
