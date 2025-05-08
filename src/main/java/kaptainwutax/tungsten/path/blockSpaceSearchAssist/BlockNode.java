@@ -327,9 +327,11 @@ public class BlockNode {
 //			return false;
 //		}
 		// Search for a path without fall damage
-//		if (!BlockStateChecker.isAnyWater(childState)) {
-//			if (heightDiff < -2) return true;
-//		}
+		if (!TungstenMod.ignoreFallDamage) {
+			if (!BlockStateChecker.isAnyWater(childState)) {
+				if (heightDiff < -2) return true;
+			}
+		}
 		if (BlockStateChecker.isAnyWater(childState)) {
 			if (distance > 1 || heightDiff > 1) return true;
 			if (!wasCleared(world, getBlockPos(), child.getBlockPos())) return true;

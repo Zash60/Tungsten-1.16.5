@@ -14,6 +14,7 @@ import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.AgentChecker;
 import kaptainwutax.tungsten.helpers.BlockShapeChecker;
 import kaptainwutax.tungsten.helpers.BlockStateChecker;
+import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.helpers.blockPath.BlockPosShifter;
 import kaptainwutax.tungsten.helpers.movement.StreightMovementHelper;
 import kaptainwutax.tungsten.helpers.render.RenderHelper;
@@ -63,6 +64,40 @@ public class PathFinder {
 		thread.setName("PathFinder");
 		thread.start();
 	}
+	
+	private boolean checkForFallDamage(Node n) {
+		if (TungstenMod.ignoreFallDamage) return false;
+		if (BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(n.agent.getBlockPos()))) return false;
+		if (n.parent == null) return false;
+		Node prev = null;
+		do {
+			if (stop) break;
+			if (prev == null) {
+				prev = n.parent;
+			} else {
+				prev = prev.parent;
+			}
+			double currFallDist = DistanceCalculator.getJumpHeight(prev.agent.getPos().y, n.agent.getPos().y);
+			if (currFallDist < -3) {
+				return true;
+			}
+		} while (!prev.agent.onGround);
+
+		if (DistanceCalculator.getJumpHeight(prev.agent.getPos().y, n.agent.getPos().y) < -3) {
+//			RenderHelper.clearRenderers();
+//        	RenderHelper.renderNode(prev);
+//        	TungstenMod.RENDERERS.add(new Cuboid(prev.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.3D, 0.8D, 0.3D), prev.color));
+//        	RenderHelper.renderNode(n);
+//        	try {
+// 				Thread.sleep(150);
+// 			} catch (InterruptedException e) {
+// 				// TODO Auto-generated catch block
+// 				e.printStackTrace();
+// 			}
+			return true;
+		}
+		return false;
+	}
 
 	private void search(WorldView world, Vec3d target) {
 	    boolean failing = true;
@@ -108,6 +143,10 @@ public class PathFinder {
 	        }
 	
 	        Node next = openSet.removeLowest();
+            // Search for a path without fall damage
+            if (checkForFallDamage(next)) {
+            	continue;
+            }
 	
 	        if (shouldSkipNode(next, target, closed, blockPath)) {
 	            continue;
@@ -533,6 +572,11 @@ public class PathFinder {
 //            			&& !child.agent.onGround
 //            			&& blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).getBlockPos().getY() - child.agent.posY > 1
             		) continue;
+
+            // Search for a path without fall damage
+            if (checkForFallDamage(child)) {
+            	continue;
+            }
 
             updateNode(world, parent, child, target, blockPath.get());
             if (child.isOpen()) {

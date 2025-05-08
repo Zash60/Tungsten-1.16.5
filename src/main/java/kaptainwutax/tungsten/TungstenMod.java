@@ -54,6 +54,7 @@ public class TungstenMod implements ClientModInitializer {
 	public static KeyBinding createGoalKeyBinding;
     private static CommandExecutor _commandExecutor;
     public static boolean renderPositonBoxes = true;
+    public static boolean ignoreFallDamage = true;
 	
 	
 	static {

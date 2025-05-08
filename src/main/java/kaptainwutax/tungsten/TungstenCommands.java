@@ -9,7 +9,8 @@ public class TungstenCommands {
 		TungstenMod.getCommandExecutor().registerNewCommand(
 				new ClickCommand(mod),
 				new GotoCommand(mod),
-				new StopCommand(mod)
+				new StopCommand(mod),
+				new SettingsCommand(mod)
 		);
 	}
 }
