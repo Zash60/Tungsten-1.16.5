@@ -18,6 +18,7 @@ import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldView;
 
@@ -169,8 +170,13 @@ public class BlockSpacePathFinder {
 	private static double computeHeuristic(Vec3d position, Vec3d target) {
 		double xzMultiplier = 1.2;
 	    double dx = (position.x - target.x)*xzMultiplier;
-	    double dy = DistanceCalculator.getHorizontalManhattanDistance(position, target) > 32 ? 0 : (position.y - target.y)*1.5;
+	    double dy = 0;
 	    double dz = (position.z - target.z)*xzMultiplier;
+	    if (BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(new BlockPos((int) position.x, (int) position.y, (int) position.z)))) {
+	    	dy = (position.y - target.y)*3.5;
+	    } else if (DistanceCalculator.getHorizontalManhattanDistance(position, target) < 32) {
+	    	dy = (position.y - target.y)*1.5;
+	    }
 	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 3;
 	}
 	

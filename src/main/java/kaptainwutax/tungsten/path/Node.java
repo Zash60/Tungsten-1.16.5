@@ -19,6 +19,7 @@ import kaptainwutax.tungsten.path.specialMoves.CornerJump;
 import kaptainwutax.tungsten.path.specialMoves.DivingMove;
 import kaptainwutax.tungsten.path.specialMoves.ExitWaterMove;
 import kaptainwutax.tungsten.path.specialMoves.LongJump;
+import kaptainwutax.tungsten.path.specialMoves.SprintJumpMove;
 import kaptainwutax.tungsten.path.specialMoves.SwimmingMove;
 import kaptainwutax.tungsten.path.specialMoves.neo.NeoJump;
 import kaptainwutax.tungsten.render.Color;
@@ -119,6 +120,9 @@ public class Node {
 	    }
 	    if (agent.touchingWater && world.getBlockState(nextBlockNode.getBlockPos()).isAir()) {
 	    	nodes.add(ExitWaterMove.generateMove(this, nextBlockNode));
+	    }
+	    if (!agent.touchingWater && world.getBlockState(nextBlockNode.getBlockPos()).isAir() && nextBlockNode.getPos(true).distanceTo(agent.getPos()) > 7) {
+	    	nodes.add(SprintJumpMove.generateMove(this, nextBlockNode));
 	    }
 	    
 	    if (agent.onGround) {
