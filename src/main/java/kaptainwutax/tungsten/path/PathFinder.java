@@ -28,6 +28,7 @@ import net.minecraft.block.CobwebBlock;
 import net.minecraft.block.LadderBlock;
 import net.minecraft.block.PaneBlock;
 import net.minecraft.block.StainedGlassPaneBlock;
+import net.minecraft.block.VineBlock;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.Colors;
 import net.minecraft.util.math.BlockPos;
@@ -621,6 +622,7 @@ public class PathFinder {
 
         boolean isWater = BlockStateChecker.isAnyWater(state);
         boolean isLadder = state.getBlock() instanceof LadderBlock;
+        boolean isVine = state.getBlock() instanceof VineBlock;
         boolean isConnected = BlockStateChecker.isConnected(nodeBlockPos);
         boolean isBelowLadder = stateBelow.getBlock() instanceof LadderBlock;
         boolean isBelowBottomSlab = BlockStateChecker.isBottomSlab(stateBelow);
@@ -633,7 +635,7 @@ public class PathFinder {
         boolean agentOnGroundOrClimbingOrOnTallBlock = node.agent.onGround || node.agent.isClimbing(world) || isBelowLadder || isBlockBelowTall;
 
         // Ladder-specific conditions
-        boolean validLadderProximity = (isLadder || isBelowLadder) 
+        boolean validLadderProximity = (isLadder || isBelowLadder || isVine) 
             && (nodePos.isWithinRangeOf(BlockPosShifter.getPosOnLadder(closestPos), 0.4, 0.7) || 
             		(isNextNodeAbove && nodePos.getY() > closestPos.getBlockPos().getY() || !isNextNodeBelow && nodePos.getY() < closestPos.getBlockPos().getY()) 
             		&& nodePos.isWithinRangeOf(BlockPosShifter.getPosOnLadder(closestPos), 3.4, 0.7));

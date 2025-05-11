@@ -20,7 +20,7 @@ import net.minecraft.world.WorldView;
 
 public class CornerJump {
 	
-	public static Node generateMove(Node parent, BlockNode nextBlockNode) {
+	public static Node generateMove(Node parent, BlockNode nextBlockNode, boolean reverse) {
 		WorldView world = TungstenMod.mc.world;
 		Agent agent = parent.agent;
 
@@ -41,14 +41,20 @@ public class CornerJump {
         // Go forward to edge and jump
         boolean jump = false;
         int limit = 0;
-        desiredYaw = 120f;
-        while (limit < 40 && jump == false && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()-1) {
+        desiredYaw += reverse ? -90f : 90f;
+        while (limit < 18 && jump == false && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()-2) {
             Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.04, 0, -0.04);
         	limit++;
-        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
-        	RenderHelper.renderNode(newNode);
-            if (blockCollisions.findAny().isEmpty()) {
-        		desiredYaw = 95f;
+        	Stream<VoxelShape> blockCollisions = Streams.stream(newNode.agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
+//        	RenderHelper.renderNode(newNode, TungstenMod.TEST);
+//            try {
+//				Thread.sleep(50);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+            if (blockCollisions.findAny().isEmpty() || newNode.agent.horizontalCollision || limit > 10) {
+        		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(newNode.agent.getPos(), nextBlockNode.getPos(true));
         		jump = true;
         	}
 
@@ -61,23 +67,25 @@ public class CornerJump {
         limit = 0;
         Direction dir = DirectionHelper.getHorizontalDirectionFromPos(nextBlockNode.previous.getPos(), nextBlockNode.getPos());
         Vec3d offsetVec = new Vec3d(0, 0, 0).offset(dir, 0.5);
-        while (limit < 40 && !newNode.agent.onGround && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()-1) {
+        while (limit < 40 && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()-1) {
             Box adjustedBox = newNode.agent.box.offset(offsetVec).expand(-0.001, 0, -0.001);
         	limit++;
         	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
-        	RenderHelper.renderNode(newNode);
+//        	RenderHelper.renderNode(newNode, TungstenMod.TEST);
             if (blockCollisions.findAny().isEmpty()) {
-                try {
-    				Thread.sleep(50);
-    			} catch (InterruptedException e) {
-    				// TODO Auto-generated catch block
-    				e.printStackTrace();
-    			}
-//        		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(newNode.agent.getPos(), nextBlockNode.getPos(true));
+//                try {
+//    				Thread.sleep(50);
+//    			} catch (InterruptedException e) {
+//    				// TODO Auto-generated catch block
+//    				e.printStackTrace();
+//    			}
+                if (newNode.agent.onGround)
+        		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(newNode.agent.getPos(), nextBlockNode.getPos(true));
         	}
-            newNode = new Node(newNode, world, new PathInput(true, false, false, false, false, false, true, agent.pitch, limit < 12 ? 65f : 15f),
+            newNode = new Node(newNode, world, new PathInput(true, false, false, false, false, false, true, agent.pitch, desiredYaw),
             		new Color(0, 255, 150), newNode.cost + 5);
         	limit++;
+        	if (newNode.agent.getPos().isWithinRangeOf(nextBlockNode.getPos(true), 0.7, 0.8)) break;
         }
             
         return newNode;
