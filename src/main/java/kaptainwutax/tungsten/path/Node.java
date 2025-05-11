@@ -24,6 +24,7 @@ import kaptainwutax.tungsten.path.specialMoves.SwimmingMove;
 import kaptainwutax.tungsten.path.specialMoves.neo.NeoJump;
 import kaptainwutax.tungsten.render.Color;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.IceBlock;
 import net.minecraft.block.LadderBlock;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Box;
@@ -129,7 +130,7 @@ public class Node {
 	    	if (nextBlockNode.isDoingNeo()) {
 	    		nodes.add(NeoJump.generateMove(this, nextBlockNode));
 	    	}
-		    if (nextBlockNode.isDoingLongJump() || world.getBlockState(nextBlockNode.getBlockPos()).getBlock() instanceof LadderBlock) {
+		    if (nextBlockNode.isDoingLongJump() || world.getBlockState(nextBlockNode.getBlockPos()).getBlock() instanceof LadderBlock || world.getBlockState(nextBlockNode.previous.getBlockPos()).getBlock() instanceof IceBlock) {
 		    	nodes.add(LongJump.generateMove(this, nextBlockNode));
 		    }
 	    }
@@ -215,8 +216,10 @@ public class Node {
 	            if (newNode.agent.touchingWater && (sneak || jump) && newNode.agent.getBlockPos().getY() == nextBlockNode.getBlockPos().getY()) return;
 	            if (newNode.agent.touchingWater && jump && newNode.agent.getBlockPos().getY() > nextBlockNode.getBlockPos().getY()) return;
 	            if (!sneak) {
+	            	boolean isBelowClosedTrapDoor = BlockStateChecker.isClosedBottomTrapdoor(world.getBlockState(nextBlockNode.getBlockPos().down()));
+	        	    double minY = isBelowClosedTrapDoor ? nextBlockNode.getPos(true).y - 1 : nextBlockNode.getPos(true).y - 0.5;
 		            for (int j = 0; j < ((!jump) && !newNode.agent.isClimbing(world) ? 3 : 10); j++) {
-		                if (newNode.agent.getPos().y <= nextBlockNode.getPos(true).getY() && !newNode.agent.isClimbing(world) || !isMoving) break;
+		                if (newNode.agent.getPos().y <= minY && !newNode.agent.isClimbing(world) || !isMoving) break;
 		                Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.001, 0, -0.001);
 		                Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
 			            if (blockCollisions.findAny().isEmpty() && isDoingLongJump) jump = true;
@@ -269,7 +272,9 @@ public class Node {
 	            new Color(0, 255, 255), this.cost + 1);
 
 	    int i = 0;
-	    while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()) {
+	    boolean isBelowClosedTrapDoor = BlockStateChecker.isClosedBottomTrapdoor(world.getBlockState(nextBlockNode.getBlockPos().down()));
+	    double minY = isBelowClosedTrapDoor ? nextBlockNode.getPos(true).y - 1 : nextBlockNode.getPos(true).y - 0.5;
+	    while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) && newNode.agent.getPos().y > minY) {
 	    	if (i > 60) break;
 	    	i++;
 	        newNode = new Node(newNode, world, new PathInput(forward, false, right, false, false, false, true, agent.pitch, yaw),

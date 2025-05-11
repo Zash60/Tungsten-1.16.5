@@ -604,7 +604,7 @@ public class PathFinder {
     	
     	Vec3d nodePos = node.agent.getPos();
     	
-    	if (nodePos.distanceTo(closestPos.getPos(true)) > (isRunningLongDist ? 2.80 : 0.80)) return;
+    	if (!nodePos.isWithinRangeOf(closestPos.getPos(true), (isRunningLongDist ? 2.80 : 0.80), (isRunningLongDist ? 1.20 : 1.80))) return;
     	
     	boolean isNextNodeAbove = nextNodePos.getBlockPos().getY() > closestPos.getBlockPos().getY();
     	boolean isNextNodeBelow = nextNodePos.getBlockPos().getY() < closestPos.getBlockPos().getY();
@@ -624,6 +624,7 @@ public class PathFinder {
         boolean isConnected = BlockStateChecker.isConnected(nodeBlockPos);
         boolean isBelowLadder = stateBelow.getBlock() instanceof LadderBlock;
         boolean isBelowBottomSlab = BlockStateChecker.isBottomSlab(stateBelow);
+        boolean isBelowClosedTrapDoor= BlockStateChecker.isClosedBottomTrapdoor(stateBelow);
         boolean isBelowGlassPane = (stateBelow.getBlock() instanceof PaneBlock) || (stateBelow.getBlock() instanceof StainedGlassPaneBlock);
         boolean isBlockBelowTall = closestBlockBelowHeight > 1.3;
         
@@ -643,6 +644,8 @@ public class PathFinder {
 
         boolean validBottomSlabProximity = isBelowBottomSlab && distanceToClosestPos < 0.90
                 && heightDiff < 2;
+        
+        boolean validClosedTrapDoorProximity = isBelowClosedTrapDoor && nodePos.isWithinRangeOf(closestPos.getPos(true), 0.88, 2.2);
         
         // General position conditions
         boolean validStandardProximity = !isLadder && !isBelowLadder && !isBelowGlassPane 
@@ -679,6 +682,7 @@ public class PathFinder {
 		    		|| validGlassPaneProximity
 		    		|| validSmallBlockProximity
 		    		|| validBottomSlabProximity
+		    		|| validClosedTrapDoorProximity
 	    		)
 //			    && (child.agent.getBlockPos().getY() == blockPath.get(closestPosIDX).getBlockPos().getY())
     			)
