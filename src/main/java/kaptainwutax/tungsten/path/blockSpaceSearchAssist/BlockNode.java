@@ -226,6 +226,7 @@ public class BlockNode {
 		if (isStreightPossible) return true;
 		if (endNode == null) return false;
 		
+		// When running bot in normal environment instead of parkour you need to turn on Neo and Corner jump checks to avoid cases where it can get stuck
 		boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
 		if (shouldCheckNeo) {
 			Direction neoDirection = NeoMovementHelper.getNeoDirection(world, start, end, shouldRender, shouldSlow);
