@@ -1,5 +1,6 @@
 package kaptainwutax.tungsten.helpers;
 
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
@@ -57,6 +58,18 @@ public class DirectionHelper {
 	    double pitch = Math.atan2(deltaY, distance);
 	    return pitch * 180.0 / Math.PI;
 	}
+	
+
+	/**
+     * Calculates the horizontal direction from origin Vec3d to destination Vec3d positions.
+     * 
+     * @param orig origin position
+     * @param dest destination position
+     * @return horizontal direction calculated from origin Vec3d to destination Vec3d positions.
+     */
+	public static Direction getHorizontalDirectionFromPos(BlockPos orig, BlockPos dest) {
+        return getHorizontalDirectionFromYaw(calcYawFromVec3d(new Vec3d(orig.getX(), orig.getY(), orig.getZ()), new Vec3d(dest.getX(), dest.getY(), dest.getZ())));
+    }
 	
 	/**
      * Calculates the horizontal direction from origin Vec3d to destination Vec3d positions.

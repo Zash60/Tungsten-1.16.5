@@ -226,7 +226,8 @@ public class Node {
 	            if (newNode.agent.touchingWater && jump && newNode.agent.getBlockPos().getY() > nextBlockNode.getBlockPos().getY()) return;
 	            if (!sneak) {
 	            	boolean isBelowClosedTrapDoor = BlockStateChecker.isClosedBottomTrapdoor(world.getBlockState(nextBlockNode.getBlockPos().down()));
-	        	    double minY = isBelowClosedTrapDoor ? nextBlockNode.getPos(true).y - 1 : nextBlockNode.getBlockPos().getY() - 0.3;
+	        	    boolean shouldAllowWalkingOnLowerBlock = !world.getBlockState(agent.getBlockPos().up(2)).isAir() && nextBlockNode.getPos(true).distanceTo(agent.getPos()) < 3;
+	        	    double minY = isBelowClosedTrapDoor ? nextBlockNode.getPos(true).y - 1 : nextBlockNode.getBlockPos().getY() - (shouldAllowWalkingOnLowerBlock ? 1.3 : 0.3);
 		            for (int j = 0; j < ((!jump) && !newNode.agent.isClimbing(world) ? 3 : 10); j++) {
 		                if (newNode.agent.getPos().y <= minY && !newNode.agent.isClimbing(world) || !isMoving) break;
 		                Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.001, 0, -0.001);
@@ -282,7 +283,8 @@ public class Node {
 
 	    int i = 0;
 	    boolean isBelowClosedTrapDoor = BlockStateChecker.isClosedBottomTrapdoor(world.getBlockState(nextBlockNode.getBlockPos().down()));
-	    double minY = isBelowClosedTrapDoor ? nextBlockNode.getPos(true).y - 1 : nextBlockNode.getBlockPos().getY() - 0.4;
+	    boolean shouldAllowWalkingOnLowerBlock = !world.getBlockState(agent.getBlockPos().up(2)).isAir() && nextBlockNode.getPos(true).distanceTo(agent.getPos()) < 3;
+	    double minY = isBelowClosedTrapDoor ? nextBlockNode.getPos(true).y - 1 : nextBlockNode.getBlockPos().getY() - (shouldAllowWalkingOnLowerBlock ? 1.4 : 0.4);
 	    while (!newNode.agent.onGround && !newNode.agent.isClimbing(world) && newNode.agent.getPos().y > minY) {
 	    	if (i > 60) break;
 	    	i++;

@@ -1,7 +1,9 @@
 package kaptainwutax.tungsten.path.specialMoves;
 
+import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.agent.Agent;
+import kaptainwutax.tungsten.helpers.BlockStateChecker;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.path.Node;
@@ -21,8 +23,9 @@ public class SprintJumpMove {
 	    Node newNode = new Node(parent, world, new PathInput(false, false, false, false, false, false, false, parent.agent.pitch, desiredYaw),
 	    				new Color(0, 255, 150), parent.cost + 0.1);
 		int limit = 0;
+		Node lastHigheastNodeSinceGround = null;
         // Run forward to the node
-		while (distance > 0.2 && limit < 80) {
+		while (distance > 0.2 && limit < 80 && !newNode.agent.horizontalCollision) {
 //        	RenderHelper.renderNode(newNode);
 //        	try {
 //				Thread.sleep(5);
@@ -30,6 +33,18 @@ public class SprintJumpMove {
 //				// TODO Auto-generated catch block
 //				e.printStackTrace();
 //			}
+
+			if (newNode.agent.onGround || lastHigheastNodeSinceGround != null && lastHigheastNodeSinceGround.agent.getPos().y < newNode.agent.getPos().y) {
+				lastHigheastNodeSinceGround = newNode;
+			} else if (lastHigheastNodeSinceGround != null
+					&& (!TungstenMod.ignoreFallDamage
+					&& !BlockStateChecker.isAnyWater(world.getBlockState(newNode.agent.getLandingPos(world))))
+					&& DistanceCalculator.getJumpHeight(lastHigheastNodeSinceGround.agent.getPos().y, newNode.agent.getPos().y) < -3) {
+				newNode = new Node(newNode, world, new PathInput(true, false, false, false, true, false, true, parent.agent.pitch, desiredYaw),
+	            		new Color(255, 0, 0), Double.POSITIVE_INFINITY);
+				break;
+			}
+			
         	limit++;
     		distance = DistanceCalculator.getHorizontalEuclideanDistance(newNode.agent.getPos(), nextBlockNode.getPos(true));
     		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(newNode.agent.getPos(), nextBlockNode.getPos(true));

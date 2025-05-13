@@ -1,10 +1,13 @@
 package kaptainwutax.tungsten.helpers.movement;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.helpers.DirectionHelper;
+import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.helpers.MovementHelper;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldView;
 
@@ -53,6 +56,24 @@ public class StreightMovementHelper {
 	        BlockPos.Mutable currPos = new BlockPos.Mutable();
 	        TungstenMod.TEST.clear(); // Clear visual markers
 	        renderBlock(endPos, Color.BLUE);
+	        
+	        boolean isOneBlockAway = DistanceCalculator.getHorizontalEuclideanDistance(startPos, endPos) <= 1;
+	        
+	        if (isOneBlockAway) {
+	        	Direction dir = DirectionHelper.getHorizontalDirectionFromPos(startPos, endPos);
+	        	int offsetX = dir.getOffsetX();
+	        	int offsetZ = dir.getOffsetZ();
+
+	            currPos.set(x, y + 2, z);
+	            
+	            if (!processStep(currPos)) {
+		            currPos.set(x + offsetX, y, z + offsetZ);
+		            if (!processStep(currPos)) {
+		                return false; // Path obstructed
+		            }
+	            }
+	        	
+	        }
 
 	        while (x != endX || y != endY || z != endZ) {
 	            if (TungstenMod.PATHFINDER.stop) return false;

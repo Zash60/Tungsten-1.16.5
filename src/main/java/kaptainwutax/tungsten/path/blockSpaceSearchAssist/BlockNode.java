@@ -1,7 +1,11 @@
 package kaptainwutax.tungsten.path.blockSpaceSearchAssist;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
@@ -199,9 +203,15 @@ public class BlockNode {
 	public List<BlockNode> getChildren(WorldView world, Goal goal) {
 
 		List<BlockNode> nodes = getNodesIn3DCircule(8, this, goal);
-		nodes.removeIf((child) -> {
-			return shouldRemoveNode(world, child);
-		});
+//		nodes.removeIf((child) -> {
+//			return shouldRemoveNode(world, child);
+//		});
+		
+        Set<BlockNode> toRemove = nodes.parallelStream()
+            .filter(node -> shouldRemoveNode(world, node))
+            .collect(Collectors.toCollection(ConcurrentHashMap::newKeySet));
+
+        nodes.removeAll(toRemove);
 
 		TungstenMod.TEST.clear();
 
@@ -303,6 +313,7 @@ public class BlockNode {
 				}
 			}
 		}
+		
 		return nodes;
 	}
 
@@ -311,6 +322,7 @@ public class BlockNode {
 			return true;
 
 		BlockState currentBlockState = world.getBlockState(getBlockPos());
+		if (currentBlockState.isFullCube(world, getBlockPos())) return true;
 		BlockState currentBlockBelowState = world.getBlockState(getBlockPos().down());
 		BlockState childAboveState = world.getBlockState(child.getBlockPos().up());
 		BlockState childState = world.getBlockState(child.getBlockPos());

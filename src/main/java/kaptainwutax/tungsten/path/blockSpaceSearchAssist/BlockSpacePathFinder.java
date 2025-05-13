@@ -226,20 +226,19 @@ public class BlockSpacePathFinder {
 		Debug.logMessage("FOUND IT");
 		path.add(n);
 		while(n.previous != null) {
-			if (n.previous.previous != null) {
-
 		        BlockState state = TungstenMod.mc.world.getBlockState(n.getBlockPos());
 		        boolean isWater = BlockStateChecker.isAnyWater(state);
 		        BlockNode lastN = path.getLast();
 		        boolean canGetFromLastNToCurrent = StreightMovementHelper.isPossible(TungstenMod.mc.world, lastN.getBlockPos(), n.getBlockPos());
-				if (n.getPos(true).getY() - n.previous.getPos(true).getY() != 0) {
-					if (isWater && !canGetFromLastNToCurrent)
+		        double heightDiff = DistanceCalculator.getJumpHeight(lastN.getPos(true).getY(), n.getPos(true).getY());
+				if (heightDiff != 0) {
+					if (isWater && n.previous.previous != null)
 					{
 						path.add(n);
 						path.add(n.previous.previous);
 					} else if (!isWater) {
 						path.add(n);
-						path.add(n.previous);
+//						path.add(n.previous);
 					}
 				} else if (
 						!isWater &&
@@ -247,9 +246,8 @@ public class BlockSpacePathFinder {
 						!canGetFromLastNToCurrent)
 						) {
 						path.add(n);
-						if (n.previous != null) path.add(n.previous);
+//						if (n.previous != null) path.add(n.previous);
 				}
-			}
 			n = n.previous;
 		}
 
@@ -262,10 +260,10 @@ public class BlockSpacePathFinder {
 			BlockNode blockNode = path.get(i);
 			BlockNode lastBlockNode = path.get(i-1);
 	        boolean canGetFromLastNToCurrent = StreightMovementHelper.isPossible(TungstenMod.mc.world, lastBlockNode.getBlockPos(), blockNode.getBlockPos());
-	        if (!canGetFromLastNToCurrent) {
-	        	path2.add(lastBlockNode);
-	        	path2.add(lastBlockNode.previous);
-	        } else {
+	        if (!canGetFromLastNToCurrent || BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(lastBlockNode.getBlockPos()))) {
+	        	if (!path2.contains(lastBlockNode)) path2.add(lastBlockNode);
+	        	path2.add(blockNode);
+	        } else if (lastBlockNode.getPos(true).distanceTo(blockNode.getPos(true)) > 1.44 || lastBlockNode.getBlockPos().getY() - blockNode.getBlockPos().getY() != 0) {
 	        	path2.add(blockNode);
 	        }
 		}
