@@ -1,13 +1,15 @@
 package kaptainwutax.tungsten.path.blockSpaceSearchAssist;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
 import kaptainwutax.tungsten.helpers.BlockShapeChecker;
 import kaptainwutax.tungsten.helpers.BlockStateChecker;
@@ -17,7 +19,6 @@ import kaptainwutax.tungsten.helpers.blockPath.BlockPosShifter;
 import kaptainwutax.tungsten.helpers.movement.CornerJumpMovementHelper;
 import kaptainwutax.tungsten.helpers.movement.NeoMovementHelper;
 import kaptainwutax.tungsten.helpers.movement.StreightMovementHelper;
-import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
@@ -207,15 +208,13 @@ public class BlockNode {
 //			return shouldRemoveNode(world, child);
 //		});
 		
-        Set<BlockNode> toRemove = nodes.parallelStream()
-            .filter(node -> shouldRemoveNode(world, node))
-            .collect(Collectors.toCollection(ConcurrentHashMap::newKeySet));
-
-        nodes.removeAll(toRemove);
+		 List<BlockNode> filtered = nodes.parallelStream()
+			        .filter(node -> !shouldRemoveNode(world, node))
+			        .collect(Collectors.toList());
 
 		TungstenMod.TEST.clear();
 
-		return nodes;
+		return filtered;
 
 	}
 
@@ -237,84 +236,96 @@ public class BlockNode {
 		if (endNode == null) return false;
 		
 		// When running bot in normal environment instead of parkour you need to turn on Neo and Corner jump checks to avoid cases where it can get stuck
-		boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
-		if (shouldCheckNeo) {
-			Direction neoDirection = NeoMovementHelper.getNeoDirection(world, start, end, shouldRender, shouldSlow);
-			if (neoDirection != null) {
-				endNode.isDoingNeo = true;
-				endNode.neoSide = neoDirection;
-				endNode.isDoingCornerJump = false;
-				return true;
-			}
-		}
-		boolean isCornerJumpPossible = CornerJumpMovementHelper.isPossible(world, start, end, shouldRender, shouldSlow);
-		if (isCornerJumpPossible) {
-			endNode.isDoingNeo = false;
-			endNode.isDoingCornerJump = true;
-			return true;
-		}
+//		boolean shouldCheckNeo = start.isWithinDistance(end, 4.2) && true;
+//		if (shouldCheckNeo) {
+//			Direction neoDirection = NeoMovementHelper.getNeoDirection(world, start, end, shouldRender, shouldSlow);
+//			if (neoDirection != null) {
+//				endNode.isDoingNeo = true;
+//				endNode.neoSide = neoDirection;
+//				endNode.isDoingCornerJump = false;
+//				return true;
+//			}
+//		}
+//		boolean isCornerJumpPossible = CornerJumpMovementHelper.isPossible(world, start, end, shouldRender, shouldSlow);
+//		if (isCornerJumpPossible) {
+//			endNode.isDoingNeo = false;
+//			endNode.isDoingCornerJump = true;
+//			return true;
+//		}
 
 		return false;
 	}
 
 	private List<BlockNode> getNodesIn3DCircule(int d, BlockNode parent, Goal goal) {
-		List<BlockNode> nodes = new ArrayList<>();
-		
-		double g = 32.656; // Acceleration due to gravity in m/s^2
-		double v_sprint = 5.8; // Sprinting speed in m/s 5.8 based on meteor player.speed var
-		
-		if (parent.wasOnSlime && parent.previous != null && parent.previous.y - parent.y < 0) {
-			TungstenMod.RENDERERS.clear();
-//	    	TungstenMod.RENDERERS.add(new Cuboid(node.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), Color.GREEN));
-	    	 TungstenMod.BLOCK_PATH_RENDERER.add(new Cuboid(new Vec3d((double)parent.getBlockPos().getX(), (double)parent.getBlockPos().getY(), (double)parent.getBlockPos().getZ()), new Vec3d(0.2D, 0.2D, 0.2D), Color.GREEN));
-			try {
-				Thread.sleep(250);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		double yMax = (parent.wasOnSlime && parent.previous != null && parent.previous.y - parent.y < 0
-				? MovementHelper.getSlimeBounceHeight(parent.previous.y - parent.y) - 0.5
-				: 4);
-//		if (parent.wasOnLadder) {
-//			yMax += 1;
-//		}
+		ConcurrentLinkedQueue<BlockNode> nodes = new ConcurrentLinkedQueue<>();
 
-		int distanceWanted = d;
-		for (int py = -64; py < yMax; py++) {
+	    double g = 32.656;
+	    double v_sprint = 5.8;
 
-			if (py < 0 && py < -5) {
-				double t = Math.sqrt((2 * py * -1) / g);
-				d = (int) Math.ceil(v_sprint * t);
-			} else
-				d = distanceWanted + 1;
-			nodes.add(new BlockNode(this.x, this.y + py, this.z, goal, this, ActionCosts.WALK_ONE_BLOCK_COST));
-			for (int id = 1; id <= d; id++) {
-				int px = id;
-				int pz = 0;
-				int dx = -1, dz = 1;
-				int n = id * 4;
-				for (int i = 0; i < n; i++) {
-					if (px == id && dx > 0)
-						dx = -1;
-					else if (px == -id && dx < 0)
-						dx = 1;
-					if (pz == id && dz > 0)
-						dz = -1;
-					else if (pz == -id && dz < 0)
-						dz = 1;
-					px += dx;
-					pz += dz;
-					BlockNode newNode = new BlockNode(this.x + px, this.y + py, this.z + pz, goal, this,
-							ActionCosts.WALK_ONE_BLOCK_COST);
-					nodes.add(newNode);
-				}
-			}
-		}
-		
-		return nodes;
+	    double yMax = (parent.wasOnSlime && parent.previous != null && parent.previous.y - parent.y < 0)
+	        ? MovementHelper.getSlimeBounceHeight(parent.previous.y - parent.y) - 0.5
+	        : 4;
+
+	    if (parent.wasOnSlime && parent.previous != null && parent.previous.y - parent.y < 0) {
+	        TungstenMod.BLOCK_PATH_RENDERER.add(new Cuboid(
+	                new Vec3d(parent.getBlockPos().getX(), parent.getBlockPos().getY(), parent.getBlockPos().getZ()),
+	                new Vec3d(0.2D, 0.2D, 0.2D), Color.GREEN));
+	        try {
+	            Thread.sleep(250); // Optional debug delay
+	        } catch (InterruptedException e) {
+	            e.printStackTrace();
+	        }
+	    }
+
+	    int distanceWanted = d;
+	    int finalYMax = (int) Math.ceil(yMax);
+
+	    ForkJoinPool customPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+
+	    try {
+	        customPool.submit(() ->
+	            IntStream.range(-64, finalYMax).parallel().forEach(py -> {
+	                int localD;
+
+	                if (py < 0 && py < -5) {
+	                    double t = Math.sqrt((2 * py * -1) / g);
+	                    localD = (int) Math.ceil(v_sprint * t);
+	                } else {
+	                    localD = distanceWanted + 1;
+	                }
+
+	                // Center node
+	                nodes.add(new BlockNode(this.x, this.y + py, this.z, goal, this, ActionCosts.WALK_ONE_BLOCK_COST));
+
+	                for (int id = 1; id <= localD; id++) {
+	                    int px = id, pz = 0;
+	                    int dx = -1, dz = 1;
+	                    int n = id * 4;
+
+	                    for (int i = 0; i < n; i++) {
+	                        if (px == id && dx > 0) dx = -1;
+	                        else if (px == -id && dx < 0) dx = 1;
+
+	                        if (pz == id && dz > 0) dz = -1;
+	                        else if (pz == -id && dz < 0) dz = 1;
+
+	                        px += dx;
+	                        pz += dz;
+
+	                        BlockNode newNode = new BlockNode(this.x + px, this.y + py, this.z + pz, goal, this,
+	                                ActionCosts.WALK_ONE_BLOCK_COST);
+	                        nodes.add(newNode);
+	                    }
+	                }
+	            })
+	        ).get(); // Wait for all to complete
+	    } catch (InterruptedException | ExecutionException e) {
+	        e.printStackTrace();
+	    } finally {
+	        customPool.shutdown();
+	    }
+
+	    return new ArrayList<>(nodes);
 	}
 
 	private boolean shouldRemoveNode(WorldView world, BlockNode child) {

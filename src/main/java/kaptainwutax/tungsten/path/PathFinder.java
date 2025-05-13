@@ -7,7 +7,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
@@ -356,7 +360,7 @@ public class PathFinder {
 //	    	else collisionScore += 2000;
 	    	
 	    } else {
-	        collisionScore += (Math.abs(0.3 - child.agent.velZ) + Math.abs(0.3 - child.agent.velX)) * 40;
+	        collisionScore += (Math.abs(0.3 - child.agent.velZ) + Math.abs(0.3 - child.agent.velX)) * 90;
 	    }
 	    if (child.agent.isClimbing(TungstenMod.mc.world)) {
 //	    	collisionScore *= 20000;
@@ -415,7 +419,7 @@ public class PathFinder {
     }
 	
 	private static boolean updateBestSoFar(Node child, double[] bestHeuristicSoFar, Vec3d target) {
-		boolean failing = false;
+		boolean failing = true;
 	    for (int i = 0; i < COEFFICIENTS.length; i++) {
 	        double heuristic = child.estimatedCostToGoal + child.cost / COEFFICIENTS[i];
 	        if (bestHeuristicSoFar[i] - heuristic > minimumImprovement) {
@@ -557,47 +561,116 @@ public class PathFinder {
         }
     }
 
-    private boolean processNodeChildren(WorldView world, Node parent, Vec3d target, Optional<List<BlockNode>> blockPath, BinaryHeapOpenSet openSet, Set<Vec3d> closed, double[] bestHeuristicSoFar) {
-        boolean failing = true;
-//        TungstenMod.RENDERERS.clear();
-        Node lastChild = null;
-    	for (Node child : parent.getChildren(world, target, blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX))) {
-            if (stop) break;
-            if (
-//            		shouldSkipChild(child, target, closed, blockPath) 
-//            		||
-            		(lastChild != null 
-            			&& (!child.agent.isClimbing(world) && !lastChild.agent.isClimbing(world)
-	            		&& lastChild.agent.getPos().distanceTo(child.agent.getPos()) < 0.19
-            			|| child.agent.isClimbing(world) && lastChild.agent.isClimbing(world)
-	            		&& lastChild.agent.getPos().distanceTo(child.agent.getPos()) < 0.04))
-            		|| blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingNeo() 
-            			&& !child.agent.onGround
-            			&& child.agent.getBlockPos().getY() - blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).getBlockPos().getY() == 0
-            			// This makes normal movement outside of parkour slower.
-            			// TODO: Add option to turn this on and off
-//            		|| blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).isDoingLongJump() 
-//            			&& !child.agent.onGround
-//            			&& blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX).getBlockPos().getY() - child.agent.posY > 1
-            		) continue;
+    private boolean processNodeChildren(WorldView world, Node parent, Vec3d target, Optional<List<BlockNode>> blockPath,
+            BinaryHeapOpenSet openSet, Set<Vec3d> closed, double[] bestHeuristicSoFar) {
+			AtomicBoolean failing = new AtomicBoolean(true);
+			List<Node> children = parent.getChildren(world, target, blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX));
+			
+			Queue<Node> validChildren = new ConcurrentLinkedQueue<>();
 
-            // Search for a path without fall damage
-            if (checkForFallDamage(child)) {
-            	continue;
-            }
+			BlockNode lastBlockNode = blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX-1);
+			BlockNode nextBlockNode = blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX);
+			
+			ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+			
+			List<Callable<Void>> tasks = children.stream().map(child -> (Callable<Void>) () -> {
+				if (stop) return null;
+				
+				boolean skip = (
+					nextBlockNode.isDoingNeo() && !child.agent.onGround &&
+					child.agent.getBlockPos().getY() == nextBlockNode.getBlockPos().getY()
+					|| nextBlockNode.isDoingLongJump() && !child.agent.onGround
+//					|| lastBlockNode.getBlockPos().getY() > nextBlockNode.getBlockPos().getY()
+//					&& child.agent.getBlockPos().getY() < nextBlockNode.getBlockPos().getY()
+				);
+				
+				if (skip || checkForFallDamage(child)) {
+					return null;
+				}
 
-            updateNode(world, parent, child, target, blockPath.get(), closed);
-            if (child.isOpen()) {
-                openSet.update(child);
-            } else {
-                openSet.insert(child);
-            }
-            failing = updateBestSoFar(child, bestHeuristicSoFar, target);
-//            RenderHelper.renderNode(child);
-            lastChild = child;
-        }
-    	return failing;
-    }
+
+				// Check if this child is too close to any already accepted child
+			    for (Node other : validChildren) {
+			        double distance = other.agent.getPos().distanceTo(child.agent.getPos());
+	
+			        boolean bothClimbing = other.agent.isClimbing(world) && child.agent.isClimbing(world);
+			        boolean bothNotClimbing = !other.agent.isClimbing(world) && !child.agent.isClimbing(world);
+	
+			        if ((bothClimbing && distance < 0.03) || (bothNotClimbing && distance < 0.19)) {
+			            return null; // too close to existing child
+			        }
+			    }
+				
+				validChildren.add(child);
+				return null;
+			}).collect(Collectors.toList());
+			
+			try {
+				executor.invokeAll(tasks);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} finally {
+				executor.shutdown();
+			}
+			
+			executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+			Object openSetLock = new Object();  // if openSet is not thread-safe
+			Object bestHeuristicLock = new Object();  // for updating shared heuristic array
+		
+			List<Callable<Void>> processingTasks = validChildren.stream()
+			    .map(child -> (Callable<Void>) () -> {
+			        updateNode(world, parent, child, target, blockPath.get(), closed);
+
+			        synchronized (openSetLock) {
+			            if (child.isOpen()) {
+			                openSet.update(child);
+			            } else {
+			                openSet.insert(child);
+			            }
+			        }
+
+			        // Update best heuristic safely
+			        synchronized (bestHeuristicLock) {
+			            if (updateBestSoFar(child, bestHeuristicSoFar, target)) {
+			                failing.set(false);
+			            }
+			        }
+
+			        // Optional: render node if you're using thread-safe rendering
+			        // RenderHelper.renderNode(child);
+
+			        return null;
+			    })
+			    .collect(Collectors.toList());
+
+			try {
+			    executor.invokeAll(processingTasks);
+			} catch (InterruptedException e) {
+			    e.printStackTrace();
+			} finally {
+			    executor.shutdown();
+			}
+				
+//			for (Node child : validChildren) {
+//				updateNode(world, parent, child, target, blockPath.get(), closed);
+//				
+//				if (child.isOpen()) {
+//					openSet.update(child);
+//				} else {
+//					openSet.insert(child);
+//				}
+//				
+//				// Update best so far
+//				if (updateBestSoFar(child, bestHeuristicSoFar, target)) {
+//					failing.set(false);
+//				}
+//				
+//				// Optionally render or handle visual updates here
+//				// RenderHelper.renderNode(child);
+//			}
+			
+			return failing.get();
+		}
     
     private static void updateNextClosestBlockNodeIDX(List<BlockNode> blockPath, Node node, Set<Vec3d> closed) {
     	if (blockPath == null) return;
