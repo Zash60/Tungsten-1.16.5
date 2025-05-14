@@ -333,7 +333,9 @@ public class BlockNode {
 			return true;
 
 		BlockState currentBlockState = world.getBlockState(getBlockPos());
-		if (currentBlockState.isFullCube(world, getBlockPos()) || world.getBlockState(getBlockPos().down()).isAir()) return true;
+		
+		if (previous != null)
+		if (currentBlockState.isFullCube(world, getBlockPos()) || !(world.getBlockState(getBlockPos()).getBlock() instanceof LadderBlock) && world.getBlockState(getBlockPos().down()).isAir()) return true;
 		BlockState currentBlockBelowState = world.getBlockState(getBlockPos().down());
 		BlockState childAboveState = world.getBlockState(child.getBlockPos().up());
 		BlockState childState = world.getBlockState(child.getBlockPos());

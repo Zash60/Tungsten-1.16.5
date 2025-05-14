@@ -179,16 +179,14 @@ public class PathFinder {
 	        if ((numNodesConsidered & (timeCheckInterval - 1)) == 0) {
 	            handleTimeout(startTime, primaryTimeoutTime, next, target, start, bestHeuristicSoFar, player, closed);
 	        }
+        	updateNextClosestBlockNodeIDX(blockPath.get(), next, closed);
 	        
-	        if (numNodesConsidered % 20 == 0) {	        	
+	        if (numNodesConsidered % 20 == 0) {
 	        	RenderHelper.renderPathSoFar(next);
 	        }
 	
 	        failing = processNodeChildren(world, next, target, blockPath, openSet, closed, bestHeuristicSoFar);
 	        numNodesConsidered++;
-	        if (numNodesConsidered % 150 == 0) {
-		        RenderHelper.renderNode(next);
-	        }
 //	        try {
 //				Thread.sleep(250);
 //			} catch (InterruptedException e) {
@@ -375,7 +373,7 @@ public class PathFinder {
 
 	    double estimatedCostToGoal = /*computeHeuristic(childPos, child.agent.onGround, target) - 200 +*/ collisionScore;
 	    if (blockPath != null) {
-	    		updateNextClosestBlockNodeIDX(blockPath, child, closed);
+//	    		updateNextClosestBlockNodeIDX(blockPath, child, closed);
 		    	Vec3d posToGetTo = BlockPosShifter.getPosOnLadder(blockPath.get(NEXT_CLOSEST_BLOCKNODE_IDX));
 		    	
 		    	if (child.agent.getPos().squaredDistanceTo(target) <= 2.0D) {
@@ -406,7 +404,7 @@ public class PathFinder {
 //        		continue;
 //        	}
             double distance = current.getSquaredDistance(position.getPos(true))/* + Math.abs(position.y - current.getY()) * 160*/;
-            if ( distance < 1) continue;
+            if ( distance < 1 && closestIDX < i-1) continue;
             if (distance < minDistance
             		&& StreightMovementHelper.isPossible(world, position.getBlockPos(), current)
             		) {
@@ -560,6 +558,25 @@ public class PathFinder {
 			closed.clear();
         }
     }
+    
+    private boolean filterChidren(Node child, BlockNode lastBlockNode, BlockNode nextBlockNode, boolean isSmallBlock) {
+    	
+    	double dist = DistanceCalculator.getHorizontalEuclideanDistance(child.agent.getPos(), nextBlockNode.getPos(true));
+    	double distB = DistanceCalculator.getHorizontalEuclideanDistance(lastBlockNode.getPos(true), nextBlockNode.getPos(true));
+    	
+    	if (distB > 6 || child.agent.isClimbing(TungstenMod.mc.world)) return  child.agent.getPos().getY() < (nextBlockNode.getPos(true).getY());
+    	
+    	if (nextBlockNode.isDoingNeo())
+    		return !child.agent.onGround && child.agent.getBlockPos().getY() == nextBlockNode.getBlockPos().getY();
+    	
+    	if (nextBlockNode.isDoingLongJump()) return !child.agent.onGround;
+    	
+    	if (isSmallBlock) return !child.agent.onGround && dist > 1.85;
+    	
+    	
+    	return !BlockStateChecker.isBottomSlab(TungstenMod.mc.world.getBlockState(nextBlockNode.getBlockPos().down())) && child.agent.getPos().getY() < (nextBlockNode.getPos(true).getY() - 1.5);
+//    	return false;
+    }
 
     private boolean processNodeChildren(WorldView world, Node parent, Vec3d target, Optional<List<BlockNode>> blockPath,
             BinaryHeapOpenSet openSet, Set<Vec3d> closed, double[] bestHeuristicSoFar) {
@@ -570,19 +587,15 @@ public class PathFinder {
 
 			BlockNode lastBlockNode = blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX-1);
 			BlockNode nextBlockNode = blockPath.get().get(NEXT_CLOSEST_BLOCKNODE_IDX);
+	        double closestBlockVolume = BlockShapeChecker.getShapeVolume(nextBlockNode.getBlockPos().down());
+	        boolean isSmallBlock = closestBlockVolume > 0 && closestBlockVolume < 1;
 			
 			ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 			
 			List<Callable<Void>> tasks = children.stream().map(child -> (Callable<Void>) () -> {
 				if (stop) return null;
 				
-				boolean skip = (
-					nextBlockNode.isDoingNeo() && !child.agent.onGround &&
-					child.agent.getBlockPos().getY() == nextBlockNode.getBlockPos().getY()
-					|| nextBlockNode.isDoingLongJump() && !child.agent.onGround
-//					|| lastBlockNode.getBlockPos().getY() > nextBlockNode.getBlockPos().getY()
-//					&& child.agent.getBlockPos().getY() < nextBlockNode.getBlockPos().getY()
-				);
+				boolean skip = filterChidren(child, lastBlockNode, nextBlockNode, isSmallBlock);
 				
 				if (skip || checkForFallDamage(child)) {
 					return null;
@@ -596,7 +609,7 @@ public class PathFinder {
 			        boolean bothClimbing = other.agent.isClimbing(world) && child.agent.isClimbing(world);
 			        boolean bothNotClimbing = !other.agent.isClimbing(world) && !child.agent.isClimbing(world);
 	
-			        if ((bothClimbing && distance < 0.03) || (bothNotClimbing && distance < 0.19)) {
+			        if ((bothClimbing && distance < 0.03) || (bothNotClimbing && distance < 0.19) || (isSmallBlock && distance < 0.2)) {
 			            return null; // too close to existing child
 			        }
 			    }
@@ -685,6 +698,11 @@ public class PathFinder {
     	Vec3d nodePos = node.agent.getPos();
     	
     	if (!nodePos.isWithinRangeOf(closestPos.getPos(true), (isRunningLongDist ? 2.80 : 0.80), (isRunningLongDist ? 1.20 : 1.80))) return;
+    	
+    	Node p = node.parent;
+    	for (int i = 0; i < 6; i++) {
+    		if (p != null && !p.agent.getPos().isWithinRangeOf(closestPos.getPos(true), (isRunningLongDist ? 2.80 : 1.80), (isRunningLongDist ? 1.20 : 1.80))) return;
+		}
     	
     	boolean isNextNodeAbove = nextNodePos.getBlockPos().getY() > closestPos.getBlockPos().getY();
     	boolean isNextNodeBelow = nextNodePos.getBlockPos().getY() < closestPos.getBlockPos().getY();
