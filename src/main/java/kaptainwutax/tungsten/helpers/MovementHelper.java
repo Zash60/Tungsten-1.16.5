@@ -89,7 +89,7 @@ public class MovementHelper {
 	      }
 
 	        while (x != x2 || y != y2 || z != z2) {
-	        	if (TungstenMod.PATHFINDER.stop) return false;
+	        	if (TungstenMod.PATHFINDER.stop.get()) return false;
 	            
 	            
 	            currPos.set(x, y, z);
@@ -251,7 +251,7 @@ public class MovementHelper {
 		        	int neoX = x-1;
 		        	int currZ = endZ > z ? z-1 : z+1;
 		        	while (currZ != endZ) {
-		        		if (TungstenMod.PATHFINDER.stop) return false;
+		        		if (TungstenMod.PATHFINDER.stop.get()) return false;
 		        		if (count > 5) return false;
 		        		count++;
 		            	currPos.set(neoX, y-1, currZ);
@@ -294,7 +294,7 @@ public class MovementHelper {
 		        	int neoX = x+1;
 		        	int currZ = endZ > z ? z-1 : z+1;
 		        	while (currZ != endZ) {
-		        		if (TungstenMod.PATHFINDER.stop) return false;
+		        		if (TungstenMod.PATHFINDER.stop.get()) return false;
 		        		if (count > 5) return false;
 		        		count++;
 		            	currPos.set(neoX, y-1, currZ);
@@ -345,7 +345,7 @@ public class MovementHelper {
 		        	int neoZ = z+1;
 		        	int currX =  endX > x ? x-1 : x+1;
 		        	while (currX != endX) {
-		        		if (TungstenMod.PATHFINDER.stop) return false;
+		        		if (TungstenMod.PATHFINDER.stop.get()) return false;
 		        		if (count > 5) return false;
 		        		count++;
 		            	currPos.set(currX, y-1, neoZ);
@@ -392,7 +392,7 @@ public class MovementHelper {
 		        	int neoZ = z-1;
 		        	int currX =  endX > x ? x-1 : x+1;
 		        	while (currX != endX) {
-		        		if (TungstenMod.PATHFINDER.stop) return false;
+		        		if (TungstenMod.PATHFINDER.stop.get()) return false;
 		        		if (count > 5) return false;
 		        		count++;
 		            	currPos.set(currX, y-1, neoZ);
@@ -446,7 +446,7 @@ public class MovementHelper {
 					if (isEdgeOnZ)
 		        	while (x != endX || y != endY || z != endZ) {
 		//        		if (distance >= 2) return false;
-		            	if (TungstenMod.PATHFINDER.stop) return false;
+		            	if (TungstenMod.PATHFINDER.stop.get()) return false;
 		                
 		
 						if (isEdgeOnZ) {
@@ -555,7 +555,7 @@ public class MovementHelper {
 						z = startPos.getZ();
 						if (isEdgeOnX)
 						while (x != endX || y != endY || z != endZ) {
-			            	if (TungstenMod.PATHFINDER.stop) return false;
+			            	if (TungstenMod.PATHFINDER.stop.get()) return false;
 							
 						if (isEdgeOnX) {
 							if (shouldRender) {
@@ -675,7 +675,7 @@ public class MovementHelper {
 						if (distance < 2) {
 			        	while (x != endX || y != endY || z != endZ) {
 
-			            	if (TungstenMod.PATHFINDER.stop) return false;
+			            	if (TungstenMod.PATHFINDER.stop.get()) return false;
 			                currPos.set(x-1, y, z-1);
 			                if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			            		if (shouldRender) {

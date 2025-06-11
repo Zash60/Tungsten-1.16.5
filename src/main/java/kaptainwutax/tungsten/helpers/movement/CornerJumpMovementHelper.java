@@ -58,7 +58,7 @@ public class CornerJumpMovementHelper {
 //	        }
 	        
 	        while (x != endX || y != endY || z != endZ) {
-	            if (TungstenMod.PATHFINDER.stop) return false;
+	            if (TungstenMod.PATHFINDER.stop.get()) return false;
 	            // Move x or z based on conditions
 	            if ((isEdgeOnZ || (isEdgeOnX && z == endZ)) && x != endX) {
 	                x = moveCoordinate(x, endX);

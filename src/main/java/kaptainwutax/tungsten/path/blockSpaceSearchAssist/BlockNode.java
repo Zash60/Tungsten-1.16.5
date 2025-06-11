@@ -3,10 +3,9 @@ package kaptainwutax.tungsten.path.blockSpaceSearchAssist;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -16,8 +15,6 @@ import kaptainwutax.tungsten.helpers.BlockStateChecker;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.helpers.MovementHelper;
 import kaptainwutax.tungsten.helpers.blockPath.BlockPosShifter;
-import kaptainwutax.tungsten.helpers.movement.CornerJumpMovementHelper;
-import kaptainwutax.tungsten.helpers.movement.NeoMovementHelper;
 import kaptainwutax.tungsten.helpers.movement.StreightMovementHelper;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import kaptainwutax.tungsten.render.Color;
@@ -280,10 +277,10 @@ public class BlockNode {
 	    int distanceWanted = d;
 	    int finalYMax = (int) Math.ceil(yMax);
 
-	    ForkJoinPool customPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+	    ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 	    try {
-	        customPool.submit(() ->
+	    	executor.submit(() ->
 	            IntStream.range(generateDeep ? -64 : -4, finalYMax).parallel().forEach(py -> {
 	                int localD;
 
@@ -318,18 +315,20 @@ public class BlockNode {
 	                    }
 	                }
 	            })
-	        ).get(); // Wait for all to complete
-	    } catch (InterruptedException | ExecutionException e) {
+	        );
+	    	executor.shutdown();
+			executor.awaitTermination(2, TimeUnit.SECONDS);
+	    } catch (InterruptedException e) {
 	        e.printStackTrace();
 	    } finally {
-	        customPool.shutdown();
+	    	executor.shutdown();
 	    }
 
 	    return new ArrayList<>(nodes);
 	}
 
 	private boolean shouldRemoveNode(WorldView world, BlockNode child) {
-		if (TungstenMod.PATHFINDER.stop)
+		if (TungstenMod.PATHFINDER.stop.get())
 			return true;
 
 		BlockState currentBlockState = world.getBlockState(getBlockPos());
@@ -594,9 +593,9 @@ public class BlockNode {
 				return true;
 			if ((heightDiff == 0) && distance >= 5.3)
 				return true;
-			if ((heightDiff == -1) && distance >= 6.3)
+			if (heightDiff >= -3 && distance >= 6)
 				return true;
-			if (heightDiff < -2 && distance >= 6.5)
+			if (heightDiff < -2 && distance >= 6.3)
 				return true;
 
 			// Trapdoor checks

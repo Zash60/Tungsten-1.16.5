@@ -32,7 +32,7 @@ public class GotoCommand extends Command {
 	        try {
 				
 	        	BlockTarget target = GotoTargetArgumentType.get(context);
-	        	if(!TungstenMod.PATHFINDER.active && !TungstenMod.EXECUTOR.isRunning()) {
+	        	if(!TungstenMod.PATHFINDER.active.get() && !TungstenMod.EXECUTOR.isRunning()) {
 	        		TungstenMod.TARGET = target.getVec3d().add(0.5, 0, 0.5);
 	        		TungstenMod.PATHFINDER.find(TungstenMod.mc.world, target.getVec3d().add(0.5, 0, 0.5));
 	    		} else {

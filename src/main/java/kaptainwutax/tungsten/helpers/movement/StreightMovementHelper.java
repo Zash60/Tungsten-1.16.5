@@ -76,7 +76,7 @@ public class StreightMovementHelper {
 	        }
 
 	        while (x != endX || y != endY || z != endZ) {
-	            if (TungstenMod.PATHFINDER.stop) return false;
+	            if (TungstenMod.PATHFINDER.stop.get()) return false;
 
 	            currPos.set(x, y, z);
 

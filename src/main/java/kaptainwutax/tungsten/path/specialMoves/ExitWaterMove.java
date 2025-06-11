@@ -18,6 +18,7 @@ import net.minecraft.world.WorldView;
 public class ExitWaterMove {
 
 	public static Node generateMove(Node parent, BlockNode nextBlockNode) {
+	    if (!parent.agent.touchingWater) return parent;
 		double cost = 0.2;
 		WorldView world = TungstenMod.mc.world;
 		Agent agent = parent.agent;

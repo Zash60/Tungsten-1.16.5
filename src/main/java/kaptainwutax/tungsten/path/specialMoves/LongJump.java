@@ -31,6 +31,7 @@ public class LongJump {
 	    // Go back if we are too close to the edge to jump
 	    if (distance > 4 && DistanceCalculator.getDistanceToEdge(newNode.agent) < 0.8 && AgentChecker.isAgentStationary(newNode.agent, 0.07)) {
 	        for (int j = 0; j < 6; j++) {
+	        	if (newNode.agent.horizontalCollision) break;
 	            Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.45, 0, -0.45);
 	        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
 	        	if (j > 1 && blockCollisions.findAny().isEmpty()) break;
@@ -47,6 +48,7 @@ public class LongJump {
 			distance = DistanceCalculator.getHorizontalEuclideanDistance(newNode.agent.getPos(), nextBlockNode.getPos(true));
 	        // Go forward to edge and jump
 	        while (limit < 10) {
+	        	if (newNode.agent.horizontalCollision) break;
 	            Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(boxExpension, 0, boxExpension);
 	        	limit++;
 	        	if (distance > 3) {
@@ -63,6 +65,7 @@ public class LongJump {
 	        }
 	        limit = 0;
 	        while (limit < 20 && !newNode.agent.onGround && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()-1) {
+	        	if (newNode.agent.horizontalCollision) break;
 	    		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
 	            newNode = new Node(newNode, world, new PathInput(true, false, false, false, false, false, true, agent.pitch, desiredYaw),
 	            		new Color(distance < 0.4 ? 180 : 0, 255, 150), newNode.cost + cost);
@@ -72,6 +75,7 @@ public class LongJump {
 			limit = 0;
 	        // Run forward to the node
 			while (distance > 0.2 && limit < 20) {
+	        	if (newNode.agent.horizontalCollision) break;
 	        	limit++;
 	    		distance = DistanceCalculator.getHorizontalEuclideanDistance(newNode.agent.getPos(), nextBlockNode.getPos(true));
 	    		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));

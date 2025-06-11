@@ -40,7 +40,6 @@ public class Node {
 	public Agent agent;
 	public PathInput input;
 	public double cost;
-	public double heuristic;
 	public double estimatedCostToGoal = 0;
 	public int heapPosition;
 	public double combinedCost;
@@ -51,7 +50,7 @@ public class Node {
 		this.agent = agent;
 		this.color = color;
 		this.cost = pathCost;
-		this.heuristic = 0;
+		this.combinedCost = 0;
 		this.heapPosition = -1;
 	}
 
@@ -61,7 +60,7 @@ public class Node {
 		this.input = input;
 		this.color = color;
 		this.cost = pathCost;
-		this.heuristic = 0;
+		this.combinedCost = 0;
 		this.heapPosition = -1;
 	}
 	
@@ -131,7 +130,7 @@ public class Node {
 	    if (agent.touchingWater && world.getBlockState(nextBlockNode.getBlockPos()).isAir()) {
 	    	nodes.add(ExitWaterMove.generateMove(this, nextBlockNode));
 	    }
-	    if (!agent.touchingWater && world.getBlockState(nextBlockNode.getBlockPos()).isAir() && nextBlockNode.getPos(true).distanceTo(agent.getPos()) > 7) {
+	    if (!agent.touchingWater && world.getBlockState(nextBlockNode.getBlockPos()).isAir()) {
 	    	nodes.add(SprintJumpMove.generateMove(this, nextBlockNode));
 	    }
 	    
@@ -194,7 +193,7 @@ public class Node {
 	                            if ((sneak || ((right || left) && !forward)) && sprint) continue;
 
 	                            for (boolean jump : new boolean[]{true, false}) {
-	                            	if (isCloseToBlockNode && jump && nextBlockNode.getBlockPos().getY() == agent.blockY) continue;
+//	                            	if (isCloseToBlockNode && jump && nextBlockNode.getBlockPos().getY() == agent.blockY) continue;
 	                                createAndAddNode(world, nextBlockNode, nodes, forward, right, left, sneak, sprint, jump, yaw, isDoingLongJump, isCloseToBlockNode);
 	                            }
 	                        }
@@ -234,8 +233,8 @@ public class Node {
 	            	boolean isBelowClosedTrapDoor = BlockStateChecker.isClosedBottomTrapdoor(world.getBlockState(nextBlockNode.getBlockPos().down()));
 	        	    boolean shouldAllowWalkingOnLowerBlock = !world.getBlockState(agent.getBlockPos().up(2)).isAir() && nextBlockNode.getPos(true).distanceTo(agent.getPos()) < 3;
 	        	    double minY = isBelowClosedTrapDoor ? nextBlockNode.getPos(true).y - 1 : nextBlockNode.getBlockPos().getY() - (shouldAllowWalkingOnLowerBlock ? 1.3 : 0.3);
-		            for (int j = 0; j < ((!jump) && !newNode.agent.isClimbing(world) ? 3 : 10); j++) {
-		                if (newNode.agent.getPos().y <= minY && !newNode.agent.isClimbing(world) || !isMoving) break;
+		            for (int j = 0; j < ((!jump) && !newNode.agent.isClimbing(world) ? 1 : 10); j++) {
+//		                if (newNode.agent.getPos().y <= minY && !newNode.agent.isClimbing(world) || !isMoving) break;
 		                Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.001, 0, -0.001);
 		                Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
 			            if (blockCollisions.findAny().isEmpty() && isDoingLongJump) jump = true;

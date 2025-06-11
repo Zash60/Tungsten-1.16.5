@@ -87,7 +87,7 @@ public class BlockSpacePathFinder {
 		openSet.insert(start);
 		target = target.subtract(0.5, 0, 0.5);
 		while(!openSet.isEmpty()) {
-			if (TungstenMod.PATHFINDER.stop) {
+			if (TungstenMod.PATHFINDER.stop.get()) {
 				RenderHelper.clearRenderers();
 				break;
 			}
@@ -120,7 +120,7 @@ public class BlockSpacePathFinder {
 
 			
 			for(BlockNode child : next.getChildren(world, goal, generateDeep)) {
-				if (TungstenMod.PATHFINDER.stop) return Optional.empty();
+				if (TungstenMod.PATHFINDER.stop.get()) return Optional.empty();
 //				if (closed.contains(child)) continue;
 				
 

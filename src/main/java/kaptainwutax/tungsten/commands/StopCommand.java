@@ -19,8 +19,8 @@ public class StopCommand extends Command {
 		builder.executes(context -> {
 	        try {
 				
-	        	if(TungstenMod.PATHFINDER.active || TungstenMod.EXECUTOR.isRunning()) {
-	        		TungstenMod.PATHFINDER.stop = true;
+	        	if(TungstenMod.PATHFINDER.active.get() || TungstenMod.EXECUTOR.isRunning()) {
+	        		TungstenMod.PATHFINDER.stop.set(true);
 	        		TungstenMod.EXECUTOR.stop = true;
 					Debug.logMessage("Stopped!");
 	    		} else {

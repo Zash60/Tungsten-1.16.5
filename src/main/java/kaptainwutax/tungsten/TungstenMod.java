@@ -114,7 +114,7 @@ public class TungstenMod implements ClientModInitializer {
     
         ClientTickEvents.START_CLIENT_TICK.register((a) -> {
         	
-        	boolean isRunning = TungstenMod.PATHFINDER.active || TungstenMod.EXECUTOR.isRunning();
+        	boolean isRunning = TungstenMod.PATHFINDER.active.get() || TungstenMod.EXECUTOR.isRunning();
         	if (!isRunning) {
 	        	if (!TungstenMod.BLOCK_PATH_RENDERER.isEmpty()) {
 	        		TungstenMod.BLOCK_PATH_RENDERER.clear();
@@ -165,7 +165,7 @@ public class TungstenMod implements ClientModInitializer {
 		         		TungstenMod.TARGET = newPos;
 		         		
 
-		        		if (clickMode == clickModeEnum.GOTO && !TungstenMod.PATHFINDER.active) {
+		        		if (clickMode == clickModeEnum.GOTO && !TungstenMod.PATHFINDER.active.get()) {
 		        			PATHFINDER.find(TungstenMod.mc.world, TARGET);
 		        		}
 	        		}

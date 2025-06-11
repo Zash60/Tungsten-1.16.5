@@ -38,17 +38,17 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 			Agent.INSTANCE.tick(this.getWorld());
 		}
 
-		if(TungstenMod.runKeyBinding.isPressed() && !TungstenMod.PATHFINDER.active && !TungstenMod.EXECUTOR.isRunning()) {
+		if(TungstenMod.runKeyBinding.isPressed() && !TungstenMod.PATHFINDER.active.get() && !TungstenMod.EXECUTOR.isRunning()) {
 			TungstenMod.PATHFINDER.find(this.getWorld(), TungstenMod.TARGET);
 		}
-		if(TungstenMod.runBlockSearchKeyBinding.isPressed() && !TungstenMod.PATHFINDER.active) {
+		if(TungstenMod.runBlockSearchKeyBinding.isPressed() && !TungstenMod.PATHFINDER.active.get()) {
 			BlockSpacePathFinder.find(getWorld(), TungstenMod.TARGET);
 		}
 		if (TungstenMod.pauseKeyBinding.isPressed()) {
 			try {
 				
-	        	if((TungstenMod.PATHFINDER.active || TungstenMod.EXECUTOR.isRunning())) {
-	        		TungstenMod.PATHFINDER.stop = true;
+	        	if((TungstenMod.PATHFINDER.active.get() || TungstenMod.EXECUTOR.isRunning())) {
+	        		TungstenMod.PATHFINDER.stop.set(true);
 	        		TungstenMod.EXECUTOR.stop = true;
 					Debug.logMessage("Stopped!");
 	    		} else {

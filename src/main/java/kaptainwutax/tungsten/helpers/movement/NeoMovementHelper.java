@@ -138,7 +138,7 @@ public class NeoMovementHelper {
 			BlockPos.Mutable currPos = new BlockPos.Mutable();
 
 			while (curr != end) {
-				if (TungstenMod.PATHFINDER.stop)
+				if (TungstenMod.PATHFINDER.stop.get())
 					return false;
 				if (count > 5)
 					return false;
