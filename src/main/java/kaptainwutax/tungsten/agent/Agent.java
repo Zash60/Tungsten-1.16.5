@@ -1504,7 +1504,7 @@ public class Agent {
                 player.getPos().y == this.posY ? "y" : this.posY,
                 player.getPos().z == this.posZ ? "z" : this.posZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
-//            if (TungstenMod.EXECUTOR.isRunning()) {
+            if (TungstenMod.EXECUTOR.isRunning()) {
             	player.setPosition(this.posX, this.posY, this.posZ);
 //            	TungstenMod.EXECUTOR.stop = true;
 //            	TungstenMod.PATHFINDER.stop.set(true);;
@@ -1512,7 +1512,7 @@ public class Agent {
             	Node node = TungstenMod.EXECUTOR.getCurrentNode();
             	if (node != null) RenderHelper.renderNode(node, TungstenMod.ERROR);
             	TungstenMod.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
-//            }
+            }
         }
 
         if(this.velX != player.getVelocity().x || this.velY != player.getVelocity().y || this.velZ != player.getVelocity().z) {
@@ -1524,7 +1524,7 @@ public class Agent {
                 player.getVelocity().y == this.velY ? "y" : this.velY,
                 player.getVelocity().z == this.velZ ? "z" : this.velZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
-//            if (TungstenMod.EXECUTOR.isRunning()) {
+            if (TungstenMod.EXECUTOR.isRunning()) {
             	
             	values.add(String.format("Velocity mismatch by (%s, %s, %s)",
                         player.getVelocity().x - this.velX,
@@ -1538,7 +1538,7 @@ public class Agent {
             	Node node = TungstenMod.EXECUTOR.getCurrentNode();
             	if (node != null) RenderHelper.renderNode(node, TungstenMod.ERROR);
             	TungstenMod.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
-//            }
+            }
         }
 
         if(this.mulX != ((AccessorEntity)player).getMovementMultiplier().x
