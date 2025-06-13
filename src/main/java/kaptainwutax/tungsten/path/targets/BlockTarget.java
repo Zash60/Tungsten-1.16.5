@@ -1,6 +1,6 @@
 package kaptainwutax.tungsten.path.targets;
 
-import static net.minecraft.nbt.StringNbtReader.EXPECTED_VALUE;
+import com.mojang.brigadier.exceptions.BuiltInExceptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +114,7 @@ public class BlockTarget implements ArgumentType<BlockTarget> {
     public BlockTarget parse(StringReader reader) throws CommandSyntaxException {
 	reader.skipWhitespace();
 	if (!reader.canRead()) {
-	    throw EXPECTED_VALUE.createWithContext(reader);
+		throw new BuiltInExceptions().readerExpectedStartOfQuote().createWithContext(reader);
 	}
 	String[] parts = reader.readString().split(" ");
 	List<Integer> numbers = new ArrayList<>();

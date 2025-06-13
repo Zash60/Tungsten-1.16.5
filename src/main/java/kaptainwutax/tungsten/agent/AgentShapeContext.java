@@ -16,7 +16,7 @@ import java.util.function.Predicate;
 
 public class AgentShapeContext implements ShapeContext {
 
-    protected static final ShapeContext ABSENT = new EntityShapeContext(false, -1.7976931348623157E308, ItemStack.EMPTY, fluidState -> false, null) {
+    protected static final ShapeContext ABSENT = new AgentShapeContext(false, -1.7976931348623157E308, ItemStack.EMPTY, fluidState -> false) {
         @Override
         public boolean isAbove(VoxelShape shape, BlockPos pos, boolean defaultValue) {
             return defaultValue;

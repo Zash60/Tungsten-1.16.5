@@ -2,6 +2,7 @@ package kaptainwutax.tungsten.agent;
 
 import net.minecraft.client.input.Input;
 import net.minecraft.util.PlayerInput;
+import net.minecraft.util.math.Vec2f;
 
 public class AgentInput extends Input {
 
@@ -11,7 +12,16 @@ public class AgentInput extends Input {
 		this.agent = agent;
 	}
 	
-	public void tick(boolean slowDown, float sneakSpeed) {
+	private static float getMovementMultiplier(boolean positive, boolean negative) {
+		if (positive == negative) {
+			return 0.0F;
+		} else {
+			return positive ? 1.0F : -1.0F;
+		}
+	}
+	
+	@Override
+	public void tick() {
 		this.playerInput = new PlayerInput(
 				this.agent.keyForward,
 				this.agent.keyBack,
@@ -21,13 +31,9 @@ public class AgentInput extends Input {
 				this.agent.keySneak,
 				this.agent.sprinting
 		);
-		this.movementForward = this.playerInput.forward() == this.playerInput.backward() ? 0.0f : (this.playerInput.forward() ? 1.0f : -1.0f);
-		this.movementSideways = this.playerInput.left() == this.playerInput.right() ? 0.0f : (this.playerInput.left() ? 1.0f : -1.0f);
-
-		if(slowDown) {
-			this.movementSideways *= sneakSpeed;
-			this.movementForward *= sneakSpeed;
-		}
+		float f = getMovementMultiplier(this.playerInput.forward(), this.playerInput.backward());
+		float g = getMovementMultiplier(this.playerInput.left(), this.playerInput.right());
+		this.movementVector = new Vec2f(g, f).normalize();
 	}
 
 }

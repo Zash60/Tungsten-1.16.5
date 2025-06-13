@@ -38,6 +38,12 @@ public class PathExecutor {
 		if (this.tick >= this.path.size()) return this.path.get(this.path.size()-1);
 		return this.path.get(this.tick);
 	}
+	
+
+	public int getCurrentTick() {
+		return this.tick;
+	}
+
 
 	public boolean isRunning() {
         return this.path != null && this.tick <= this.path.size();
