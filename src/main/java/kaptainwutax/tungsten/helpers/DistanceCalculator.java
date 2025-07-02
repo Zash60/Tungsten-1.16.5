@@ -37,6 +37,14 @@ public class DistanceCalculator {
     	return Math.sqrt(dx * dx + dz * dz);
 	}
 	
+
+	public static double getEuclideanDistance(Vec3d startPos, Vec3d endPos) {
+		double dx = endPos.getX() - startPos.getX();
+    	double dy = endPos.getY() - startPos.getY();
+    	double dz = endPos.getZ() - startPos.getZ();
+    	return Math.sqrt(dx * dx + dy * dy + dz * dz);
+	}
+	
 	/**
      * Calculates the horizontal Manhattan distance from startPos to endPos.
      * 

@@ -30,7 +30,7 @@ public class SprintJumpMove {
 //		TungstenMod.RENDERERS.clear();
 		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(newNode.agent.getPos(), nextBlockNode.getPos(true));
 		if (distance < 0.8) return newNode;
-		while (distance > 0.3 && limit < 200 && !agent.horizontalCollision && !newNode.agent.isInLava() || (distance <= 0.3 && !newNode.agent.onGround)) {
+		while (distance > 0.3 && limit < 200 && !newNode.agent.horizontalCollision && !newNode.agent.isInLava() || (distance <= 0.3 && !newNode.agent.onGround)) {
 //        	RenderHelper.renderNode(newNode);
 //        	try {
 //				Thread.sleep(50);
@@ -60,6 +60,7 @@ public class SprintJumpMove {
     		distance = DistanceCalculator.getHorizontalEuclideanDistance(newNode.agent.getPos(), nextBlockNode.getPos(true));
             newNode = new Node(newNode, world, new PathInput(true, false, false, false, distance > 3.2 && newNode.agent.onGround, false, true, parent.agent.pitch, desiredYaw),
             		new Color(0, 255, 150), newNode.cost + cost);
+            if (newNode.agent.isClimbing(world)) newNode.cost += 1.8;
             
         }
             

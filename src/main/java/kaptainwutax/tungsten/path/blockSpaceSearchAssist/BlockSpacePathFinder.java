@@ -16,7 +16,10 @@ import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.helpers.movement.StreightMovementHelper;
 import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.LadderBlock;
+import net.minecraft.block.VineBlock;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -177,7 +180,7 @@ public class BlockSpacePathFinder {
 	    double dy = 0;
 	    double dz = (position.z - target.z)*xzMultiplier;
 	    if (BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(new BlockPos((int) position.x, (int) position.y, (int) position.z)))) {
-	    	dy = (position.y - target.y)*3.5;
+	    	dy = (position.y - target.y)*1.8;
 	    } else if (DistanceCalculator.getHorizontalManhattanDistance(position, target) < 32) {
 	    	dy = (position.y - target.y)*1.5;
 	    }
@@ -186,10 +189,11 @@ public class BlockSpacePathFinder {
 	
 	private static void updateNode(BlockNode current, BlockNode child, Vec3d target) {
 	    Vec3d childPos = child.getPos();
-	    double tentativeCost = child.cost + ActionCosts.WALK_ONE_BLOCK_COST; // Assuming uniform cost for each step
+	    Block childBlock = child.getBlockState().getBlock();
+	    double tentativeCost = child.cost + (childBlock instanceof LadderBlock || childBlock instanceof VineBlock ? 12.2 : 0) + ActionCosts.WALK_ONE_BLOCK_COST; // Assuming uniform cost for each step
 //	    tentativeCost += BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(child.getBlockPos())) ? 50 : 0; // Assuming uniform cost for each step
 
-	    double estimatedCostToGoal = computeHeuristic(childPos, target) + DistanceCalculator.getHorizontalEuclideanDistance(current.getPos(true), child.getPos(true)) * 4;
+	    double estimatedCostToGoal = computeHeuristic(childPos, target) + DistanceCalculator.getHorizontalEuclideanDistance(current.getPos(true), child.getPos(true)) * 4 + (current.getBlockPos().getY() != child.getBlockPos().getY() ? 4.8 : 0);
 
 	    child.previous = current;
 	    child.cost = tentativeCost;

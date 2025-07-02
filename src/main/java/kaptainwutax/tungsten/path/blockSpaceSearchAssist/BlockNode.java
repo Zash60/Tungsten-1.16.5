@@ -188,6 +188,10 @@ public class BlockNode {
 		return this.isDoingCornerJump;
 	}
 
+	public BlockState getBlockState() {
+		return TungstenMod.mc.world.getBlockState(getBlockPos());
+	}
+
 	public BlockPos getBlockPos() {
 		return new BlockPos(x, y, z);
 	}
@@ -592,13 +596,15 @@ public class BlockNode {
 				return true;
 			if (heightDiff == 1 && distance > 6)
 				return true;
-			if (heightDiff <= -2 && distance > 7)
+			if (heightDiff == -1 && distance > 5.3)
+				return true;
+			if (heightDiff == -2 && distance > 7)
 				return true;
 			if (heightDiff == 1 && distance >= 4.5)
 				return true;
 			if ((heightDiff == 0) && distance >= 5.3)
 				return true;
-			if (heightDiff >= -3 && distance >= 6.1)
+			if (heightDiff >= -3 && distance >= 6.3)
 				return true;
 			if (heightDiff < -2 && distance >= 6.3)
 				return true;

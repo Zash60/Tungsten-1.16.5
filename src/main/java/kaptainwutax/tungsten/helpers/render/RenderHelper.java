@@ -44,13 +44,26 @@ public class RenderHelper {
 		TungstenMod.RENDERERS.clear();
 		TungstenMod.TEST.clear();
 		if (TungstenMod.EXECUTOR == null || TungstenMod.EXECUTOR.getPath() == null || !TungstenMod.EXECUTOR.isRunning()) return;
-		Node n = TungstenMod.EXECUTOR.getPath().getLast();
-		while (n.parent != null) {
-			TungstenMod.RUNNING_PATH_RENDERER.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
-			if (TungstenMod.renderPositonBoxes) {				
+//		Node n = TungstenMod.EXECUTOR.getPath().getLast();
+//		while (n.parent != null) {
+//			TungstenMod.RUNNING_PATH_RENDERER.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
+//			if (TungstenMod.renderPositonBoxes) {				
+//				TungstenMod.RUNNING_PATH_RENDERER.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+//			}
+//			n = n.parent;
+//		}
+		List<Node> path = TungstenMod.EXECUTOR.getPath();
+		
+		for (int i = (path.size()-2); i > 0; i--) {
+			if (TungstenMod.EXECUTOR.getCurrentTick() > i) continue;
+			Node n = path.get(i);
+			
+			Node parent = path.get(i+1);
+			if (parent == null) continue;
+			TungstenMod.RUNNING_PATH_RENDERER.add(new Line(n.agent.getPos(), parent.agent.getPos(), n.color));
+			if (TungstenMod.renderPositonBoxes) {
 				TungstenMod.RUNNING_PATH_RENDERER.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
 			}
-			n = n.parent;
 		}
 	}
 	

@@ -1514,7 +1514,7 @@ public class Agent {
             	TungstenMod.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }
         }
-
+        
         if(this.velX != player.getVelocity().x || this.velY != player.getVelocity().y || this.velZ != player.getVelocity().z) {
             values.add(String.format("Velocity mismatch (%s, %s, %s) vs (%s, %s, %s)",
                 player.getVelocity().x,
@@ -1738,6 +1738,7 @@ public class Agent {
         agent.keySprint = TungstenMod.mc.options.sprintKey.isPressed();
 
         agent.pose = player.getPose();
+        agent.sprinting = player.isSprinting();
         agent.inSneakingPose = player.isInSneakingPose();
         agent.usingItem = player.isUsingItem();
         agent.sidewaysSpeed = player.sidewaysSpeed;
@@ -1805,6 +1806,7 @@ public class Agent {
         agent.keySprint = sprint;
         agent.hunger.setFoodLevel(other.hunger.getFoodLevel());
         agent.hunger.setSaturationLevel(other.hunger.getSaturationLevel());
+        agent.sprinting = other.sprinting;
         agent.pose = other.pose;
         agent.inSneakingPose = other.inSneakingPose;
         agent.usingItem = other.usingItem;

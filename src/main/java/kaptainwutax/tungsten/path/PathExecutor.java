@@ -2,7 +2,9 @@ package kaptainwutax.tungsten.path;
 
 import java.util.List;
 
+import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 
@@ -13,9 +15,11 @@ public class PathExecutor {
     protected boolean allowedFlying = false;
     public boolean stop = false;
     public Runnable cb = null;
+    public long startTime;
 
     public PathExecutor() {
     	try {
+    		this.startTime = System.currentTimeMillis();
         	this.allowedFlying = TungstenMod.mc.player.getAbilities().allowFlying;
 		} catch (Exception e) {
 			this.allowedFlying = true;
@@ -23,10 +27,30 @@ public class PathExecutor {
 	}
 
 	public void setPath(List<Node> path) {
+		this.startTime = System.currentTimeMillis();
     	this.allowedFlying = TungstenMod.mc.player.getAbilities().allowFlying;
 	    stop = false;
     	this.path = path;
     	this.tick = 0;
+    	RenderHelper.renderPathCurrentlyExecuted();
+	}
+	
+	public void addToPath(Node n) {
+		this.path.add(n);
+    	RenderHelper.renderPathCurrentlyExecuted();
+	}
+	
+	public void addPath(List<Node> path) {
+		if (stop) {
+			setPath(path);
+			return;
+		}
+		if (this.path == null) {
+			setPath(path);
+			return;
+		}
+		this.path.addAll(path);
+    	RenderHelper.renderPathCurrentlyExecuted();
 	}
 	
 	public List<Node> getPath() {
@@ -68,6 +92,14 @@ public class PathExecutor {
     		return;
     	}
     	if(this.tick == this.path.size()) {
+    		long endTime = System.currentTimeMillis();
+    		long elapsedTime = endTime - startTime;
+    		long minutes = (elapsedTime / 1000) / 60;
+            long seconds = (elapsedTime / 1000) % 60;
+            long milliseconds = elapsedTime % 1000;
+            
+            Debug.logMessage("Time taken to execute: " + minutes + " minutes, " + seconds + " seconds, " + milliseconds + " milliseconds");
+    		
 		    options.forwardKey.setPressed(false);
 		    options.backKey.setPressed(false);
 		    options.leftKey.setPressed(false);

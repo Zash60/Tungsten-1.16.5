@@ -68,8 +68,13 @@ public class RunToNode {
 			
 			if (newNode.agent.horizontalCollision && nextBlockNode.getBlockPos().getY() - newNode.agent.blockY >= 1) {
 				jump = true;
-				if (newNode.parent.agent.onGround && !newNode.agent.horizontalCollision) newNode = newNode.parent;
+				if (newNode.parent.agent.onGround && !newNode.agent.horizontalCollision) {
+					newNode = newNode.parent;
+				}
 			} else if (newNode.agent.horizontalCollision) {
+				while (newNode.agent.horizontalCollision) {
+					newNode = newNode.parent;
+				}
 				break;
 			} else {
 				jump = false;
@@ -77,6 +82,7 @@ public class RunToNode {
 			
 			newNode = new Node(newNode, world, new PathInput(true, false, false, false, jump, false, true, parent.agent.pitch, desiredYaw ),
             		new Color(0, 255, 150), newNode.cost + 0.22D);
+            if (newNode.agent.isClimbing(world)) newNode.cost += 1.8;
 			distance = DistanceCalculator.getHorizontalEuclideanDistance(newNode.agent.getPos(), nextBlockNode.getPos(true));
 
         }
