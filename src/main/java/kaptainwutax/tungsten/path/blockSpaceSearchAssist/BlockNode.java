@@ -10,13 +10,13 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
+import kaptainwutax.tungsten.TungstenModRenderContainer;
 import kaptainwutax.tungsten.helpers.BlockShapeChecker;
 import kaptainwutax.tungsten.helpers.BlockStateChecker;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.helpers.MovementHelper;
 import kaptainwutax.tungsten.helpers.blockPath.BlockPosShifter;
-import kaptainwutax.tungsten.helpers.movement.CornerJumpMovementHelper;
-import kaptainwutax.tungsten.helpers.movement.NeoMovementHelper;
 import kaptainwutax.tungsten.helpers.movement.StreightMovementHelper;
 import kaptainwutax.tungsten.path.calculators.ActionCosts;
 import kaptainwutax.tungsten.render.Color;
@@ -40,6 +40,7 @@ import net.minecraft.block.StairsBlock;
 import net.minecraft.block.VineBlock;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.entity.ai.pathing.PathNode;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -49,6 +50,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.WorldView;
 
 public class BlockNode {
+	
+	private PlayerEntity player;
 
 	/**
 	 * The position of this node
@@ -99,7 +102,8 @@ public class BlockNode {
 	 */
 	public int heapPosition;
 
-	public BlockNode(BlockPos pos, Goal goal) {
+	public BlockNode(BlockPos pos, Goal goal, PlayerEntity player, WorldView world) {
+		this.player = player;
 		this.previous = null;
 		this.cost = ActionCosts.COST_INF;
 		this.estimatedCostToGoal = goal.heuristic(pos.getX(), pos.getY(), pos.getZ());
@@ -110,11 +114,12 @@ public class BlockNode {
 		this.x = pos.getX();
 		this.y = pos.getY();
 		this.z = pos.getZ();
-		this.wasOnSlime = TungstenMod.mc.world.getBlockState(pos.down()).getBlock() instanceof SlimeBlock;
-		this.wasOnLadder = TungstenMod.mc.world.getBlockState(pos).getBlock() instanceof LadderBlock;
+		this.wasOnSlime = world.getBlockState(pos.down()).getBlock() instanceof SlimeBlock;
+		this.wasOnLadder = world.getBlockState(pos).getBlock() instanceof LadderBlock;
 	}
 
-	public BlockNode(int x, int y, int z, Goal goal) {
+	public BlockNode(int x, int y, int z, Goal goal, PlayerEntity player) {
+		this.player = player;
 		this.previous = null;
 		this.cost = ActionCosts.COST_INF;
 		this.estimatedCostToGoal = goal.heuristic(x, y, z);
@@ -125,16 +130,17 @@ public class BlockNode {
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		this.wasOnSlime = TungstenMod.mc.world.getBlockState(new BlockPos(x, y - 1, z))
+		this.wasOnSlime = player.getWorld().getBlockState(new BlockPos(x, y - 1, z))
 				.getBlock() instanceof SlimeBlock;
-		this.wasOnLadder = TungstenMod.mc.world.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
+		this.wasOnLadder = player.getWorld().getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
 	}
 
-	public BlockNode(int x, int y, int z, Goal goal, BlockNode parent, double cost) {
+	public BlockNode(int x, int y, int z, Goal goal, BlockNode parent, double cost, PlayerEntity player) {
+		this.player = player;
 		this.previous = parent;
-		this.wasOnSlime = TungstenMod.mc.world.getBlockState(new BlockPos(x, y - 1, z))
+		this.wasOnSlime = player.getWorld().getBlockState(new BlockPos(x, y - 1, z))
 				.getBlock() instanceof SlimeBlock;
-		this.wasOnLadder = TungstenMod.mc.world.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
+		this.wasOnLadder = player.getWorld().getBlockState(new BlockPos(x, y, z)).getBlock() instanceof LadderBlock;
 		this.cost = parent != null ? 0 : ActionCosts.COST_INF;
 		this.estimatedCostToGoal = goal.heuristic(x, y, z);
 		if (Double.isNaN(estimatedCostToGoal)) {
@@ -162,10 +168,19 @@ public class BlockNode {
 	}
 
 	public Vec3d getPos() {
-		return getPos(false);
+		return getPos(false, TungstenModDataContainer.world);
 	}
+	
 
 	public Vec3d getPos(boolean shift) {
+		return getPos(shift, TungstenModDataContainer.world);
+	}
+	
+	public Vec3d getPos(WorldView world) {
+		return getPos(false, world);
+	}
+
+	public Vec3d getPos(boolean shift, WorldView world) {
 		if (!shift && chachedPos != null) return chachedPos;
 		if (shift) {
 			if (chachedWithOffsetPos != null) return chachedWithOffsetPos;
@@ -173,17 +188,17 @@ public class BlockNode {
 				chachedWithOffsetPos = BlockPosShifter.shiftForStraightNeo(this, neoSide);
 				return chachedWithOffsetPos;
 			}
-			chachedWithOffsetPos = BlockPosShifter.getPosOnLadder(this);
+			chachedWithOffsetPos = BlockPosShifter.getPosOnLadder(this, world);
 			return chachedWithOffsetPos;
 		}
 		chachedPos = new Vec3d(x, y, z);
 		return chachedPos;
 	}
 
-	public boolean isDoingLongJump() {
+	public boolean isDoingLongJump(WorldView world) {
 		if (isDoingLongJump != null) return isDoingLongJump;
 		if (this.previous != null) {
-			double distance = DistanceCalculator.getHorizontalEuclideanDistance(this.previous.getPos(), this.getPos());
+			double distance = DistanceCalculator.getHorizontalEuclideanDistance(this.previous.getPos(world), this.getPos(world));
 			if (distance >= 4 && distance < 6) {
 				isDoingLongJump = true;
 				return true;
@@ -205,9 +220,9 @@ public class BlockNode {
 		return this.isDoingCornerJump;
 	}
 
-	public BlockState getBlockState() {
+	public BlockState getBlockState(WorldView world) {
 		if (chachedBlockState != null) return chachedBlockState;
-		chachedBlockState = TungstenMod.mc.world.getBlockState(getBlockPos());
+		chachedBlockState = world.getBlockState(getBlockPos());
 		return chachedBlockState;
 	}
 
@@ -236,7 +251,7 @@ public class BlockNode {
 			        .filter(node -> !shouldRemoveNode(world, node))
 			        .collect(Collectors.toList());
 
-		TungstenMod.TEST.clear();
+		TungstenModRenderContainer.TEST.clear();
 
 		return filtered;
 
@@ -249,7 +264,7 @@ public class BlockNode {
 	public static boolean wasCleared(WorldView world, BlockPos start, BlockPos end, BlockNode startNode,
 			BlockNode endNode) {
 
-		TungstenMod.TEST.clear();
+		TungstenModRenderContainer.TEST.clear();
 		boolean shouldRender = false;
 		boolean shouldSlow = false;
 		
@@ -291,7 +306,7 @@ public class BlockNode {
 	        : generateDeep ? 4 : 2;
 
 	    if (parent.wasOnSlime && parent.previous != null && parent.previous.y - parent.y < 0) {
-	        TungstenMod.BLOCK_PATH_RENDERER.add(new Cuboid(
+	    	TungstenModRenderContainer.BLOCK_PATH_RENDERER.add(new Cuboid(
 	                new Vec3d(parent.getBlockPos().getX(), parent.getBlockPos().getY(), parent.getBlockPos().getZ()),
 	                new Vec3d(0.2D, 0.2D, 0.2D), Color.GREEN));
 	        try {
@@ -319,7 +334,7 @@ public class BlockNode {
 	                }
 
 	                // Center node
-	                nodes.add(new BlockNode(this.x, this.y + py, this.z, goal, this, ActionCosts.WALK_ONE_BLOCK_COST));
+	                nodes.add(new BlockNode(this.x, this.y + py, this.z, goal, this, ActionCosts.WALK_ONE_BLOCK_COST, this.player));
 
 	                for (int id = 1; id <= localD; id++) {
 	                    int px = id, pz = 0;
@@ -337,7 +352,7 @@ public class BlockNode {
 	                        pz += dz;
 
 	                        BlockNode newNode = new BlockNode(this.x + px, this.y + py, this.z + pz, goal, this,
-	                                ActionCosts.WALK_ONE_BLOCK_COST);
+	                                ActionCosts.WALK_ONE_BLOCK_COST, this.player);
 	                        nodes.add(newNode);
 	                    }
 	                }
@@ -355,7 +370,7 @@ public class BlockNode {
 	}
 
 	private boolean shouldRemoveNode(WorldView world, BlockNode child) {
-		if (TungstenMod.PATHFINDER.stop.get())
+		if (TungstenModDataContainer.PATHFINDER.stop.get())
 			return true;
 
 		BlockState currentBlockState = world.getBlockState(getBlockPos());
@@ -370,7 +385,7 @@ public class BlockNode {
 		Block childBlock = childState.getBlock();
 		Block childBelowBlock = childBelowState.getBlock();
 		double heightDiff = getJumpHeight(this.y, child.y); // positive is going up and negative is going down
-		double distance = DistanceCalculator.getHorizontalEuclideanDistance(getPos(true), child.getPos(true));
+		double distance = DistanceCalculator.getHorizontalEuclideanDistance(getPos(true, world), child.getPos(true, world));
 
 
 //		if (BlockStateChecker.isAnyWater(currentBlockState)) {
@@ -379,7 +394,7 @@ public class BlockNode {
 //			return false;
 //		}
 		// Search for a path without fall damage
-		if (!TungstenMod.ignoreFallDamage) {
+		if (!TungstenModDataContainer.ignoreFallDamage) {
 			if (!BlockStateChecker.isAnyWater(childState)) {
 				if (heightDiff < -2) return true;
 			}
@@ -517,18 +532,18 @@ public class BlockNode {
 
 	private boolean isJumpImpossible(WorldView world, BlockNode child) {
 		double heightDiff = getJumpHeight(this.y, child.y); // positive is going up and negative is going down
-		double distance = DistanceCalculator.getHorizontalEuclideanDistance(getPos(true), child.getPos(true));
+		double distance = DistanceCalculator.getHorizontalEuclideanDistance(getPos(true, world), child.getPos(true, world));
 
 		BlockState childBlockState = world.getBlockState(child.getBlockPos().down());
 		BlockState currentBlockState = world.getBlockState(getBlockPos().down());
 		Block childBlock = childBlockState.getBlock();
-        double closestBlockBelowHeight = BlockShapeChecker.getBlockHeight(child.getBlockPos().down());
+        double closestBlockBelowHeight = BlockShapeChecker.getBlockHeight(child.getBlockPos().down(), world);
 		boolean isBlockBelowTall = closestBlockBelowHeight > 1.3;
 
 //    	if (world.getBlockState(child.getBlockPos().down()).getBlock() instanceof TrapdoorBlock) {
 //			System.out.println(!world.getBlockState(child.getBlockPos().down()).get(Properties.OPEN));
 //    	}
-		boolean isAboveSolid = BlockShapeChecker.getShapeVolume(getBlockPos().up(2)) > 0;
+		boolean isAboveSolid = BlockShapeChecker.getShapeVolume(getBlockPos().up(2), world) > 0;
 		
 		if (isAboveSolid && distance > 3) {
 			return true;
@@ -542,7 +557,7 @@ public class BlockNode {
 
 		double blockHeightDiff = currentBlockHeight - childBlockHeight; // Negative values means currentBlockHeight is
 																		// lower, and positive means currentBlockHeight
-		if (TungstenMod.mc.player.getHungerManager().getFoodLevel() < 6) {
+		if (player.getHungerManager().getFoodLevel() < 6) {
 
 			if (distance >= 4) return true;
 		}

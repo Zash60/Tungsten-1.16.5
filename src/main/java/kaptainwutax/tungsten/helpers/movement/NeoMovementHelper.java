@@ -1,6 +1,8 @@
 package kaptainwutax.tungsten.helpers.movement;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
+import kaptainwutax.tungsten.TungstenModRenderContainer;
 import kaptainwutax.tungsten.helpers.MovementHelper;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
@@ -138,7 +140,7 @@ public class NeoMovementHelper {
 			BlockPos.Mutable currPos = new BlockPos.Mutable();
 
 			while (curr != end) {
-				if (TungstenMod.PATHFINDER.stop.get())
+				if (TungstenModDataContainer.PATHFINDER.stop.get())
 					return false;
 				if (count > 5)
 					return false;
@@ -177,9 +179,9 @@ public class NeoMovementHelper {
 		}
 
 		private void renderBlock(BlockPos.Mutable currPos, Color color, boolean shouldSlow) {
-			TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()),
+			TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()),
 					new Vec3d(1.0D, 1.0D, 1.0D), color));
-			TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY() + 1, currPos.getZ()),
+			TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY() + 1, currPos.getZ()),
 					new Vec3d(1.0D, 1.0D, 1.0D), color));
 			if (shouldSlow) {
 				try {

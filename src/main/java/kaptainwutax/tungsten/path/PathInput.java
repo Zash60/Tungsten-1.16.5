@@ -1,5 +1,7 @@
 package kaptainwutax.tungsten.path;
 
+import net.minecraft.util.PlayerInput;
+
 public class PathInput {
 
 	public final boolean forward, back, right, left, jump, sneak, sprint;
@@ -15,6 +17,10 @@ public class PathInput {
 		this.sprint = sprint;
 		this.pitch = pitch;
 		this.yaw = yaw;
+	}
+	
+	public PlayerInput getPlayerInput() {
+		return new PlayerInput(forward, back, left, right, jump, sneak, sprint);
 	}
 
 	@Override

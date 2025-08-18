@@ -2,11 +2,15 @@ package kaptainwutax.tungsten.path;
 
 import java.util.List;
 
+import io.github.hackerokuz.fakes.OurFakePlayer;
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModRenderContainer;
 import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.PlayerInput;
 
 public class PathExecutor {
 
@@ -16,11 +20,14 @@ public class PathExecutor {
     public boolean stop = false;
     public Runnable cb = null;
     public long startTime;
+    private boolean isClient;
 
-    public PathExecutor() {
+    public PathExecutor(boolean isClient) {
+    	this.isClient = isClient;
     	try {
     		this.startTime = System.currentTimeMillis();
-        	this.allowedFlying = TungstenMod.mc.player.getAbilities().allowFlying;
+			if (isClient)
+	        	this.allowedFlying = TungstenMod.mc.player.getAbilities().allowFlying;
 		} catch (Exception e) {
 			this.allowedFlying = true;
 		}
@@ -29,7 +36,8 @@ public class PathExecutor {
 	public void setPath(List<Node> path) {
 		this.cb = null;
 		this.startTime = System.currentTimeMillis();
-    	this.allowedFlying = TungstenMod.mc.player.getAbilities().allowFlying;
+		if (isClient)
+			this.allowedFlying = TungstenMod.mc.player.getAbilities().allowFlying;
 	    stop = false;
     	this.path = path;
     	this.tick = 0;
@@ -74,7 +82,50 @@ public class PathExecutor {
         return this.path != null && this.tick <= this.path.size();
     }
 
-    public void tick(ClientPlayerEntity player, GameOptions options) {
+
+    public void tick(OurFakePlayer player) {
+    	player.getAbilities().allowFlying = false;
+    	if(stop) {
+    		this.tick = this.path.size();
+    		player.setPlayerInput(PlayerInput.DEFAULT);
+		    player.getAbilities().allowFlying = allowedFlying;
+		    this.path = null;
+		    stop = false;
+    		return;
+    	}
+    	if(this.tick == this.path.size()) {
+    		long endTime = System.currentTimeMillis();
+    		long elapsedTime = endTime - startTime;
+    		long minutes = (elapsedTime / 1000) / 60;
+            long seconds = (elapsedTime / 1000) % 60;
+            long milliseconds = elapsedTime % 1000;
+            
+            Debug.logMessage("Time taken to execute: " + minutes + " minutes, " + seconds + " seconds, " + milliseconds + " milliseconds");
+
+    		player.setPlayerInput(PlayerInput.DEFAULT);
+		    player.getAbilities().allowFlying = allowedFlying;
+		    this.path = null;
+		    stop = false;
+			player.setVelocity(0, 0, 0);
+		    if (cb != null) {
+		    	cb.run();
+		    	cb = null;
+		    }
+	    } else {
+		    Node node = this.path.get(this.tick);
+
+		    if(node.input != null) {
+			    player.setYaw(node.input.yaw);
+			    player.setPitch(node.input.pitch);
+			    if (player.isCreative()) player.stopGliding();
+
+	    		player.setPlayerInput(node.input.getPlayerInput());
+		    }
+	    }
+	    this.tick++;
+    }
+    
+    public void tick(PlayerEntity player, GameOptions options) {
     	player.getAbilities().allowFlying = false;
     	if(TungstenMod.pauseKeyBinding.isPressed() || stop) {
     		this.tick = this.path.size();
@@ -88,8 +139,8 @@ public class PathExecutor {
 		    player.getAbilities().allowFlying = allowedFlying;
 		    this.path = null;
 		    stop = false;
-		    TungstenMod.RUNNING_PATH_RENDERER.clear();
-		    TungstenMod.BLOCK_PATH_RENDERER.clear();
+		    TungstenModRenderContainer.RUNNING_PATH_RENDERER.clear();
+		    TungstenModRenderContainer.BLOCK_PATH_RENDERER.clear();
     		return;
     	}
     	if(this.tick == this.path.size()) {
@@ -111,8 +162,8 @@ public class PathExecutor {
 		    player.getAbilities().allowFlying = allowedFlying;
 		    this.path = null;
 		    stop = false;
-		    TungstenMod.RUNNING_PATH_RENDERER.clear();
-		    TungstenMod.BLOCK_PATH_RENDERER.clear();
+		    TungstenModRenderContainer.RUNNING_PATH_RENDERER.clear();
+		    TungstenModRenderContainer.BLOCK_PATH_RENDERER.clear();
 			player.setVelocity(0, 0, 0);
 		    if (cb != null) {
 		    	cb.run();
@@ -120,8 +171,8 @@ public class PathExecutor {
 		    }
 	    } else {
 		    Node node = this.path.get(this.tick);
-		    if(this.tick != 0) {
-			    this.path.get(this.tick - 1).agent.compare(player, true);
+		    if(this.tick != 0 && player instanceof ClientPlayerEntity) {
+			    this.path.get(this.tick - 1).agent.compare((ClientPlayerEntity) player, true);
 		    }
 
 		    if(node.input != null) {
@@ -136,10 +187,10 @@ public class PathExecutor {
 			    options.sneakKey.setPressed(node.input.sneak);
 			    options.sprintKey.setPressed(node.input.sprint);
 		    }
-		    if (!TungstenMod.RUNNING_PATH_RENDERER.isEmpty() && this.tick != 0) {
-		    	TungstenMod.RUNNING_PATH_RENDERER.remove(TungstenMod.RUNNING_PATH_RENDERER.toArray()[TungstenMod.RUNNING_PATH_RENDERER.size()-1]);
+		    if (!TungstenModRenderContainer.RUNNING_PATH_RENDERER.isEmpty() && this.tick != 0) {
+		    	TungstenModRenderContainer.RUNNING_PATH_RENDERER.remove(TungstenModRenderContainer.RUNNING_PATH_RENDERER.toArray()[TungstenModRenderContainer.RUNNING_PATH_RENDERER.size()-1]);
 		    	if (TungstenMod.renderPositonBoxes) {
-			    	TungstenMod.RUNNING_PATH_RENDERER.remove(TungstenMod.RUNNING_PATH_RENDERER.toArray()[TungstenMod.RUNNING_PATH_RENDERER.size()-1]);
+		    		TungstenModRenderContainer.RUNNING_PATH_RENDERER.remove(TungstenModRenderContainer.RUNNING_PATH_RENDERER.toArray()[TungstenModRenderContainer.RUNNING_PATH_RENDERER.size()-1]);
 		    	}
 		    }
 	    }

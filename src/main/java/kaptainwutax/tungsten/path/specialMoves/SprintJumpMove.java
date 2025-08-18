@@ -2,6 +2,7 @@ package kaptainwutax.tungsten.path.specialMoves;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.BlockStateChecker;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
@@ -17,7 +18,7 @@ public class SprintJumpMove {
 
 	public static Node generateMove(Node parent, BlockNode nextBlockNode) {
 		double cost = 0.004;
-		WorldView world = TungstenMod.mc.world;
+		WorldView world = TungstenModDataContainer.world;
 		Agent agent = parent.agent;
 		float desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
 		double distance = DistanceCalculator.getHorizontalEuclideanDistance(agent.getPos(), nextBlockNode.getPos(true));
@@ -43,7 +44,7 @@ public class SprintJumpMove {
 			if (newNode.agent.onGround || lastHigheastNodeSinceGround != null && lastHigheastNodeSinceGround.agent.getPos().y < newNode.agent.getPos().y) {
 				lastHigheastNodeSinceGround = newNode;
 			} else if (lastHigheastNodeSinceGround != null
-					&& (!TungstenMod.ignoreFallDamage
+					&& (!TungstenModDataContainer.ignoreFallDamage
 					&& !BlockStateChecker.isAnyWater(world.getBlockState(newNode.agent.getLandingPos(world))))
 					&& DistanceCalculator.getJumpHeight(lastHigheastNodeSinceGround.agent.getPos().y, newNode.agent.getPos().y) < -3) {
 				newNode = new Node(newNode, world, new PathInput(true, false, false, false, distance > 3.2, false, true, parent.agent.pitch, desiredYaw),

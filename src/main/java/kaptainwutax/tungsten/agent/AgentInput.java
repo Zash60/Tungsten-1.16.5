@@ -1,10 +1,33 @@
 package kaptainwutax.tungsten.agent;
 
-import net.minecraft.client.input.Input;
 import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec2f;
 
-public class AgentInput extends Input {
+public class AgentInput {
+	
+
+	public PlayerInput playerInput = PlayerInput.DEFAULT;
+	protected Vec2f movementVector = Vec2f.ZERO;
+
+	public Vec2f getMovementInput() {
+		return this.movementVector;
+	}
+
+	public boolean hasForwardMovement() {
+		return this.movementVector.y > 1.0E-5F;
+	}
+
+	public void jump() {
+		this.playerInput = new PlayerInput(
+			this.playerInput.forward(),
+			this.playerInput.backward(),
+			this.playerInput.left(),
+			this.playerInput.right(),
+			true,
+			this.playerInput.sneak(),
+			this.playerInput.sprint()
+		);
+	}
 
 	private final Agent agent;
 
@@ -20,7 +43,6 @@ public class AgentInput extends Input {
 		}
 	}
 	
-	@Override
 	public void tick() {
 		this.playerInput = new PlayerInput(
 				this.agent.keyForward,

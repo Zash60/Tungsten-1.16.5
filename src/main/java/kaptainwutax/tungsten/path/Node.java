@@ -111,7 +111,7 @@ public class Node {
 
 	    List<Node> nodes = new ArrayList<>();
 	    
-	    if (!agent.touchingWater && BlockStateChecker.isAnyWater(nextBlockNode.getBlockState())) {
+	    if (!agent.touchingWater && BlockStateChecker.isAnyWater(nextBlockNode.getBlockState(world))) {
 	    	Node enterWaterAndSwimMove = EnterWaterAndSwimMove.generateMove(this, nextBlockNode);
 	    	boolean isEnterWaterAndSwimMoveClose = enterWaterAndSwimMove.agent.getPos().distanceTo(nextBlockNode.getPos(true)) > 1.5;
 	    	nodes.add(enterWaterAndSwimMove);
@@ -151,12 +151,12 @@ public class Node {
 	    	}
 	    }
 
-	    if (agent.touchingWater && BlockStateChecker.isAnyWater(nextBlockNode.getBlockState())) {
-	    	if (BlockShapeChecker.getShapeVolume(nextBlockNode.getBlockPos()) == 0) nodes.add(SwimmingMove.generateMove(this, nextBlockNode));
+	    if (agent.touchingWater && BlockStateChecker.isAnyWater(nextBlockNode.getBlockState(world))) {
+	    	if (BlockShapeChecker.getShapeVolume(nextBlockNode.getBlockPos(), world) == 0) nodes.add(SwimmingMove.generateMove(this, nextBlockNode));
 	    	else  nodes.add(DivingMove.generateMove(this, nextBlockNode));
 	    	return nodes;
 	    }
-	    if (agent.touchingWater && BlockShapeChecker.getShapeVolume(nextBlockNode.getBlockPos()) == 0) {
+	    if (agent.touchingWater && BlockShapeChecker.getShapeVolume(nextBlockNode.getBlockPos(), world) == 0) {
 	    	Node exitWaterMove = ExitWaterMove.generateMove(this, nextBlockNode);
 	    	boolean isExitWaterMoveClose = exitWaterMove.agent.getPos().distanceTo(nextBlockNode.getPos(true)) < 1.5;
 	    	nodes.add(exitWaterMove);
@@ -175,7 +175,7 @@ public class Node {
 	    	if (nextBlockNode.isDoingNeo()) {
 	    		nodes.add(NeoJump.generateMove(this, nextBlockNode));
 	    	}
-		    if (nextBlockNode.isDoingLongJump() || world.getBlockState(nextBlockNode.getBlockPos()).getBlock() instanceof LadderBlock || world.getBlockState(nextBlockNode.previous.getBlockPos()).getBlock() instanceof IceBlock) {
+		    if (nextBlockNode.isDoingLongJump(world) || world.getBlockState(nextBlockNode.getBlockPos()).getBlock() instanceof LadderBlock || world.getBlockState(nextBlockNode.previous.getBlockPos()).getBlock() instanceof IceBlock) {
 		    	nodes.add(LongJump.generateMove(this, nextBlockNode));
 		    }
 	    }
@@ -201,7 +201,7 @@ public class Node {
 	}
 
 	private void generateGroundOrWaterNodes(WorldView world, Vec3d target, BlockNode nextBlockNode, List<Node> nodes) {
-	    boolean isDoingLongJump = nextBlockNode.isDoingLongJump() || nextBlockNode.isDoingNeo();
+	    boolean isDoingLongJump = nextBlockNode.isDoingLongJump(world) || nextBlockNode.isDoingNeo();
 	    boolean isCloseToBlockNode = DistanceCalculator.getHorizontalEuclideanDistance(agent.getPos(), nextBlockNode.getPos(true)) < 1;
     	BlockState state = world.getBlockState(nextBlockNode.getBlockPos());
 	    
@@ -278,7 +278,7 @@ public class Node {
 //		                if (newNode.agent.getPos().y <= minY && !newNode.agent.isClimbing(world) || !isMoving) break;
 		                if (!isMoving) break;
 		                Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.001, 0, -0.001);
-		                Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
+		                Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(world, adjustedBox));
 			            if (blockCollisions.findAny().isEmpty() && isDoingLongJump) jump = true;
 		                newNode = new Node(newNode, world, new PathInput(forward, false, right, left, jump, sneak, sprint, agent.pitch, yaw),
 		                        jump ? new Color(0, 255, 255) : new Color(sneak ? 220 : 0, 255, sneak ? 50 : 0), this.cost + addNodeCost);

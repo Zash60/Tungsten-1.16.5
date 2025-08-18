@@ -4,8 +4,6 @@ import net.minecraft.text.Text;
 
 public class Debug {
 
-    public static TungstenMod jankModInstance;
-
     public static void logInternal(String message) {
         System.out.println("Tungsten: " + message);
     }
@@ -15,18 +13,15 @@ public class Debug {
     }
 
     private static String getLogPrefix() {
-        if (jankModInstance != null) {
-            return TungstenMod.getCommandPrefix();
-        }
         return "[Tungsten] ";
     }
 
     public static void logMessage(String message, boolean prefix) {
-        if (TungstenMod.mc != null && TungstenMod.mc.player != null) {
+        if (TungstenModDataContainer.player != null) {
             if (prefix) {
                 message = "\u00A72\u00A7l\u00A7o" + getLogPrefix() + "\u00A7r" + message;
             }
-            TungstenMod.mc.player.sendMessage(Text.of(message), false);
+            TungstenModDataContainer.player.sendMessage(Text.of(message), false);
             //MinecraftClient.getInstance().player.sendChatMessage(msg);
         } else {
             logInternal(message);
@@ -43,13 +38,6 @@ public class Debug {
 
     public static void logWarning(String message) {
         logInternal("WARNING: " + message);
-        if (jankModInstance != null) {
-            if (TungstenMod.mc != null && TungstenMod.mc.player != null) {
-                String msg = "\u00A72\u00A7l\u00A7o" + getLogPrefix() + "\u00A7c" + message + "\u00A7r";
-                TungstenMod.mc.player.sendMessage(Text.of(msg), false);
-                //MinecraftClient.getInstance().player.sendChatMessage(msg);
-            }
-        }
     }
 
     public static void logWarning(String format, Object... args) {
@@ -61,10 +49,6 @@ public class Debug {
         System.err.println(message);
         System.err.println("at:");
         System.err.println(stacktrace);
-        if (TungstenMod.mc != null && TungstenMod.mc.player != null) {
-            String msg = "\u00A72\u00A7l\u00A7c" + getLogPrefix() + "[ERROR] " + message + "\nat:\n" + stacktrace + "\u00A7r";
-            TungstenMod.mc.player.sendMessage(Text.of(msg), false);
-        }
     }
 
     public static void logError(String format, Object... args) {

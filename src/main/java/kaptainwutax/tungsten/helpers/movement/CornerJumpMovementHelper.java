@@ -1,6 +1,8 @@
 package kaptainwutax.tungsten.helpers.movement;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
+import kaptainwutax.tungsten.TungstenModRenderContainer;
 import kaptainwutax.tungsten.helpers.MovementHelper;
 import kaptainwutax.tungsten.render.Color;
 import kaptainwutax.tungsten.render.Cuboid;
@@ -50,7 +52,7 @@ public class CornerJumpMovementHelper {
 			boolean isEdgeOnZ = Math.abs(endZ - z) < 2;
 
 	        BlockPos.Mutable currPos = new BlockPos.Mutable();
-	        TungstenMod.TEST.clear(); // Clear visual markers
+	        TungstenModRenderContainer.TEST.clear(); // Clear visual markers
 	        if (!isEdgeOnX && !isEdgeOnZ) return false;
 //	        if (isEdgeOnX && isEdgeOnZ) {
 //	        	
@@ -58,7 +60,7 @@ public class CornerJumpMovementHelper {
 //	        }
 	        
 	        while (x != endX || y != endY || z != endZ) {
-	            if (TungstenMod.PATHFINDER.stop.get()) return false;
+	            if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 	            // Move x or z based on conditions
 	            if ((isEdgeOnZ || (isEdgeOnX && z == endZ)) && x != endX) {
 	                x = moveCoordinate(x, endX);
@@ -97,8 +99,8 @@ public class CornerJumpMovementHelper {
 
 	    private void renderBlock(BlockPos position, Color color) {
 	        if (shouldRender) {
-	            TungstenMod.TEST.add(new Cuboid(new Vec3d(position.getX(), position.getY(), position.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), color));
-	            TungstenMod.TEST.add(new Cuboid(new Vec3d(position.getX(), position.getY() + 1, position.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), color));
+	        	TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(position.getX(), position.getY(), position.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), color));
+	        	TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(position.getX(), position.getY() + 1, position.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), color));
 	        }
 	    }
 

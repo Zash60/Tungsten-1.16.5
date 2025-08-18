@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.Streams;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
 import kaptainwutax.tungsten.helpers.render.RenderHelper;
@@ -19,7 +20,7 @@ import net.minecraft.world.WorldView;
 public class TurnACornerMove {
 
 	public static Node generateMove(Node parent, BlockNode nextBlockNode, boolean reverse) {
-		WorldView world = TungstenMod.mc.world;
+		WorldView world = TungstenModDataContainer.world;
 		Agent agent = parent.agent;
 
 		float desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));

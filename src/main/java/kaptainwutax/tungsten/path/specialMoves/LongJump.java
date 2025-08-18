@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.Streams;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.AgentChecker;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
@@ -22,7 +23,7 @@ public class LongJump {
 
 	public static Node generateMove(Node parent, BlockNode nextBlockNode) {
 		double cost = 0.2;
-		WorldView world = TungstenMod.mc.world;
+		WorldView world = TungstenModDataContainer.world;
 		Agent agent = parent.agent;
 		float desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
 		double distance = DistanceCalculator.getHorizontalEuclideanDistance(agent.getPos(), nextBlockNode.getPos(true));
@@ -33,7 +34,7 @@ public class LongJump {
 	        for (int j = 0; j < 6; j++) {
 	        	if (newNode.agent.horizontalCollision) break;
 	            Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.45, 0, -0.45);
-	        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
+	        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenModDataContainer.world, adjustedBox));
 	        	if (j > 1 && blockCollisions.findAny().isEmpty()) break;
 	        	desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
 	            newNode = new Node(newNode, world, new PathInput(false, true, false, false, false, false, false, agent.pitch, desiredYaw),
@@ -52,7 +53,7 @@ public class LongJump {
 	            Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(boxExpension, 0, boxExpension);
 	        	limit++;
 	        	if (distance > 3) {
-		        	Stream<VoxelShape> blockCollisions = Streams.stream(newNode.agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
+		        	Stream<VoxelShape> blockCollisions = Streams.stream(newNode.agent.getBlockCollisions(TungstenModDataContainer.world, adjustedBox));
 		            if (blockCollisions.findAny().isEmpty()) jump = true;
 	        	} else {
 	        		if (DistanceCalculator.getDistanceToEdge(newNode.agent) < 0.6) jump = true;

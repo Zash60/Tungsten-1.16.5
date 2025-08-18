@@ -15,7 +15,8 @@
 	import com.mojang.blaze3d.vertex.VertexFormat.DrawMode;
 	
 	import kaptainwutax.tungsten.TungstenMod;
-	import kaptainwutax.tungsten.render.Color;
+import kaptainwutax.tungsten.TungstenModRenderContainer;
+import kaptainwutax.tungsten.render.Color;
 	import kaptainwutax.tungsten.render.Cuboid;
 	import kaptainwutax.tungsten.render.Renderer;
 import net.minecraft.client.gui.DrawContext;
@@ -40,6 +41,7 @@ import net.minecraft.client.render.Tessellator;
 		@Inject(method = "render", at = @At("RETURN"))
 		public void render(MatrixStack matrices, Frustum frustum, VertexConsumerProvider.Immediate vertexConsumers,
 				double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
+			if (true) return;
 			glDisable(GL_DEPTH_TEST);
 		    glDisable(GL_BLEND);
 		    
@@ -67,20 +69,20 @@ import net.minecraft.client.render.Tessellator;
 	//	        TungstenMod.TEST.forEach(r -> render(r, tessellator));
 	
 			// Batch render each collection with culling and limiting
-			if (!TungstenMod.RUNNING_PATH_RENDERER.isEmpty())
-				renderCollection(TungstenMod.RUNNING_PATH_RENDERER, tessellator, frustum, cameraX, cameraY, cameraZ);
+			if (!TungstenModRenderContainer.RUNNING_PATH_RENDERER.isEmpty())
+				renderCollection(TungstenModRenderContainer.RUNNING_PATH_RENDERER, tessellator, frustum, cameraX, cameraY, cameraZ);
 	
-			if (!TungstenMod.BLOCK_PATH_RENDERER.isEmpty())
-				renderCollection(TungstenMod.BLOCK_PATH_RENDERER, tessellator, frustum, cameraX, cameraY, cameraZ);
+			if (!TungstenModRenderContainer.BLOCK_PATH_RENDERER.isEmpty())
+				renderCollection(TungstenModRenderContainer.BLOCK_PATH_RENDERER, tessellator, frustum, cameraX, cameraY, cameraZ);
 	
-			if (!TungstenMod.RENDERERS.isEmpty())
-				renderCollection(TungstenMod.RENDERERS, tessellator, frustum, cameraX, cameraY, cameraZ);
+			if (!TungstenModRenderContainer.RENDERERS.isEmpty())
+				renderCollection(TungstenModRenderContainer.RENDERERS, tessellator, frustum, cameraX, cameraY, cameraZ);
 	
-			if (!TungstenMod.TEST.isEmpty())
-				renderCollection(TungstenMod.TEST, tessellator, frustum, cameraX, cameraY, cameraZ);
+			if (!TungstenModRenderContainer.TEST.isEmpty())
+				renderCollection(TungstenModRenderContainer.TEST, tessellator, frustum, cameraX, cameraY, cameraZ);
 			
-			if (!TungstenMod.ERROR.isEmpty())
-				renderCollection(TungstenMod.ERROR, tessellator, frustum, cameraX, cameraY, cameraZ);
+			if (!TungstenModRenderContainer.ERROR.isEmpty())
+				renderCollection(TungstenModRenderContainer.ERROR, tessellator, frustum, cameraX, cameraY, cameraZ);
 	
 		    glEnable(GL_BLEND);
 		    glEnable(GL_DEPTH_TEST);

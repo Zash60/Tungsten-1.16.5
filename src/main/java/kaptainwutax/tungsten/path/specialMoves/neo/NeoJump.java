@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.Streams;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
@@ -22,7 +23,7 @@ import net.minecraft.world.WorldView;
 public class NeoJump {
 	
 	public static Node generateMove(Node parent, BlockNode nextBlockNode) {
-		WorldView world = TungstenMod.mc.world;
+		WorldView world = TungstenModDataContainer.world;
 		Agent agent = parent.agent;
 		
 		Direction jumpTowardsDirection = DirectionHelper.getHorizontalDirectionFromPos(nextBlockNode.previous.getPos(true), nextBlockNode.getPos(true));
@@ -47,7 +48,7 @@ public class NeoJump {
         while (limit < 40 && jump == false && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()-1) {
             Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.04, 0, -0.04);
         	limit++;
-        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
+        	Stream<VoxelShape> blockCollisions = Streams.stream(agent.getBlockCollisions(TungstenModDataContainer.world, adjustedBox));
 //        	RenderHelper.renderNode(newNode);
             if (blockCollisions.findAny().isEmpty()) {
         		desiredYaw = nudgeRotation(jumpTowardsRotation, 5);

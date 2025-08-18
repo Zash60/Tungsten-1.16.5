@@ -17,8 +17,7 @@ public class BlockPosShifter {
      * @param blockNode node to be shifted
      * @return node's position shifted closer to the ladder.
      */
-	public static Vec3d getPosOnLadder(BlockNode blockNode) {
-		WorldView world = TungstenMod.mc.world;
+	public static Vec3d getPosOnLadder(BlockNode blockNode, WorldView world) {
 		BlockState blockState = world.getBlockState(blockNode.getBlockPos());
 		BlockState blockBelowState = world.getBlockState(blockNode.getBlockPos().down());
 		Vec3d currPos = blockNode.getPos().add(0.5, 0, 0.5);

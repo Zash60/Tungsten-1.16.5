@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.Streams;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
 import kaptainwutax.tungsten.helpers.render.RenderHelper;
@@ -21,7 +22,7 @@ import net.minecraft.world.WorldView;
 public class CornerJump {
 	
 	public static Node generateMove(Node parent, BlockNode nextBlockNode, boolean reverse) {
-		WorldView world = TungstenMod.mc.world;
+		WorldView world = TungstenModDataContainer.world;
 		Agent agent = parent.agent;
 
 		float desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
@@ -45,7 +46,7 @@ public class CornerJump {
         while (limit < 18 && jump == false && newNode.agent.getPos().y > nextBlockNode.getBlockPos().getY()-2) {
             Box adjustedBox = newNode.agent.box.offset(0, -0.5, 0).expand(-0.04, 0, -0.04);
         	limit++;
-        	Stream<VoxelShape> blockCollisions = Streams.stream(newNode.agent.getBlockCollisions(TungstenMod.mc.world, adjustedBox));
+        	Stream<VoxelShape> blockCollisions = Streams.stream(newNode.agent.getBlockCollisions(TungstenModDataContainer.world, adjustedBox));
 //        	RenderHelper.renderNode(newNode, TungstenMod.TEST);
 //            try {
 //				Thread.sleep(50);

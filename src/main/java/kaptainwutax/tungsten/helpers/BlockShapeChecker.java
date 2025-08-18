@@ -25,8 +25,7 @@ public class BlockShapeChecker {
      * @param pos Position of the block
      * @return the height of a block at given position.
      */
-	public static double getBlockHeight(BlockPos pos) {
-		WorldView world = TungstenMod.mc.world;
+	public static double getBlockHeight(BlockPos pos, WorldView world) {
 		BlockState state = world.getBlockState(pos);
 		VoxelShape shape = state.getCollisionShape(world, pos);
 		double height = shape.getMax(Axis.Y);
@@ -40,10 +39,9 @@ public class BlockShapeChecker {
      * @param pos Position of the block
      * @return the volume of a block at given position.
      */
-	public static double getShapeVolume(BlockPos pos) {
-		WorldView world = TungstenMod.mc.world;
+	public static double getShapeVolume(BlockPos pos, WorldView world) {
 		BlockState state = world.getBlockState(pos);
-    	return getShapeVolume(state, pos);
+    	return getShapeVolume(state, pos, world);
     }
 	
 	/**
@@ -52,8 +50,7 @@ public class BlockShapeChecker {
      * @param pos Position of the block
      * @return the volume of a block at given position.
      */
-	public static double getShapeVolume(BlockState state, BlockPos pos) {
-		WorldView world = TungstenMod.mc.world;
+	public static double getShapeVolume(BlockState state, BlockPos pos, WorldView world) {
 		VoxelShape shape = state.getCollisionShape(world, pos);
 //        if (shape.isEmpty()) shape = state.getOutlineShape(world, pos);
         
@@ -99,9 +96,9 @@ public class BlockShapeChecker {
         if (blockState.getBlock() instanceof LadderBlock) return false;
         
         // Calculate the volume of the collision shapes
-        double blockVolume = BlockShapeChecker.getShapeVolume(pos);
-        double aboveBlockVolume1 = BlockShapeChecker.getShapeVolume(pos.up(1));
-        double aboveBlockVolume2 = BlockShapeChecker.getShapeVolume(pos.up(2));
+        double blockVolume = BlockShapeChecker.getShapeVolume(pos, world);
+        double aboveBlockVolume1 = BlockShapeChecker.getShapeVolume(pos.up(1), world);
+        double aboveBlockVolume2 = BlockShapeChecker.getShapeVolume(pos.up(2), world);
         
         // Compare the volumes
         return blockVolume > aboveBlockVolume1 && blockVolume > aboveBlockVolume2;

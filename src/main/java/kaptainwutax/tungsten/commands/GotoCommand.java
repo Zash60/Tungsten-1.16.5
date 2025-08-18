@@ -4,6 +4,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.commands.arguments.GotoTargetArgumentType;
 import kaptainwutax.tungsten.commandsystem.Command;
 import kaptainwutax.tungsten.commandsystem.CommandException;
@@ -32,9 +33,9 @@ public class GotoCommand extends Command {
 	        try {
 				
 	        	BlockTarget target = GotoTargetArgumentType.get(context);
-	        	if(!TungstenMod.PATHFINDER.active.get() && !TungstenMod.EXECUTOR.isRunning()) {
+	        	if(!TungstenModDataContainer.PATHFINDER.active.get() && !TungstenModDataContainer.EXECUTOR.isRunning()) {
 	        		TungstenMod.TARGET = target.getVec3d().add(0.5, 0, 0.5);
-	        		TungstenMod.PATHFINDER.find(TungstenMod.mc.world, target.getVec3d().add(0.5, 0, 0.5));
+	        		TungstenModDataContainer.PATHFINDER.find(TungstenMod.mc.world, target.getVec3d().add(0.5, 0, 0.5), TungstenMod.mc.player);
 	    		} else {
 	    			Debug.logWarning("Already running!");
 	    		}

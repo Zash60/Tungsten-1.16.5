@@ -16,10 +16,13 @@
   "license": "CC0-1.0",
   "icon": "assets/tungsten/icon.png",
 
-  "environment": "client",
+  "environment": "*",
   "entrypoints": {
     "client": [
       "kaptainwutax.tungsten.TungstenMod"
+    ],
+    "server": [
+      "kaptainwutax.tungsten.ServerSideTungstenMod"
     ]
   },
   "mixins": [

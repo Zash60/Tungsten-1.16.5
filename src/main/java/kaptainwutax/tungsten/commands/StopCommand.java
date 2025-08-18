@@ -4,6 +4,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.commandsystem.Command;
 import kaptainwutax.tungsten.path.PathFinder;
 import net.minecraft.command.CommandSource;
@@ -19,9 +20,9 @@ public class StopCommand extends Command {
 		builder.executes(context -> {
 	        try {
 				
-	        	if(TungstenMod.PATHFINDER.active.get() || TungstenMod.EXECUTOR.isRunning()) {
-	        		TungstenMod.PATHFINDER.stop.set(true);
-	        		TungstenMod.EXECUTOR.stop = true;
+	        	if(TungstenModDataContainer.PATHFINDER.active.get() || TungstenModDataContainer.EXECUTOR.isRunning()) {
+	        		TungstenModDataContainer.PATHFINDER.stop.set(true);
+	        		TungstenModDataContainer.EXECUTOR.stop = true;
 					Debug.logMessage("Stopped!");
 	    		} else {
 					Debug.logMessage("Nothing to stop.");

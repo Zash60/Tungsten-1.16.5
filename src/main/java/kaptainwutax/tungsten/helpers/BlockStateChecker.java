@@ -65,8 +65,7 @@ public class BlockStateChecker {
      * @param pos Position of the block
      * @return true if a block is connected to another of its type. Example: fence to fence
      */
-	public static boolean isConnected(BlockPos pos) {
-		WorldView world = TungstenMod.mc.world;
+	public static boolean isConnected(BlockPos pos, WorldView world) {
 	    BlockState state = world.getBlockState(pos);
 	    Block block = state.getBlock();
 

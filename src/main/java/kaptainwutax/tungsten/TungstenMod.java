@@ -25,6 +25,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -33,6 +34,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.RaycastContext;
+import net.minecraft.world.WorldView;
 
 public class TungstenMod implements ClientModInitializer {
 
@@ -40,16 +42,11 @@ public class TungstenMod implements ClientModInitializer {
 //    public static final ModMetadata MOD_META;
     public static final String NAME;
 
-    public static MinecraftClient mc;
-	public static Collection<Renderer> BLOCK_PATH_RENDERER = Collections.synchronizedCollection(new ArrayList<>());
-	public static Collection<Renderer> RUNNING_PATH_RENDERER = Collections.synchronizedCollection(new ArrayList<>());
-	public static Collection<Renderer> RENDERERS = Collections.synchronizedCollection(new ArrayList<>());
-	public static Collection<Renderer> ERROR = Collections.synchronizedCollection(new ArrayList<>());
-	public static Collection<Renderer> TEST = Collections.synchronizedCollection(new ArrayList<>());
+    public static MinecraftClient mc = null;
+    public static PlayerEntity player = null;
+    public static WorldView world = null;
 	public static Vec3d TARGET = new Vec3d(0.5D, 10.0D, 0.5D);
 	public static clickModeEnum clickMode = clickModeEnum.OFF;
-	public static PathExecutor EXECUTOR = new PathExecutor();
-	public static PathFinder PATHFINDER = new PathFinder();
 	public static final Logger LOG;
 	public static VoxelWorld WORLD;
 	public static KeyBinding pauseKeyBinding;
@@ -58,8 +55,6 @@ public class TungstenMod implements ClientModInitializer {
 	public static KeyBinding createGoalKeyBinding;
     private static CommandExecutor _commandExecutor;
     public static boolean renderPositonBoxes = true;
-    public static boolean ignoreFallDamage = true;
-    public static boolean LOG_DEBUG_DATA = false;
 	
 	
 	static {
@@ -72,6 +67,7 @@ public class TungstenMod implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		TungstenModDataContainer.EXECUTOR = new PathExecutor(true);
 		pauseKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 	            "key.tungsten.pause", // The translation key of the keybinding's name
 	            InputUtil.Type.KEYSYM, // The type of the keybinding, KEYSYM for keyboard, MOUSE for mouse.
@@ -100,14 +96,17 @@ public class TungstenMod implements ClientModInitializer {
 
         // Global minecraft client accessor
         mc = MinecraftClient.getInstance();
+        TungstenModDataContainer.player = mc.player;
+        TungstenModDataContainer.world = mc.world;
+        TungstenModDataContainer.gameRenderer = mc.gameRenderer;
 
         initializeCommands();
 
     	ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         Runnable toRun = new Runnable() {
             public void run() {
-	        	if (!TungstenMod.ERROR.isEmpty()) {
-	        		TungstenMod.ERROR.clear();
+	        	if (!TungstenModRenderContainer.ERROR.isEmpty()) {
+	        		TungstenModRenderContainer.ERROR.clear();
 	        	}
             }
         };
@@ -115,19 +114,19 @@ public class TungstenMod implements ClientModInitializer {
     
         ClientTickEvents.START_CLIENT_TICK.register((a) -> {
         	
-        	boolean isRunning = TungstenMod.PATHFINDER.active.get() || TungstenMod.EXECUTOR.isRunning();
+        	boolean isRunning = TungstenModDataContainer.PATHFINDER.active.get() || TungstenModDataContainer.EXECUTOR.isRunning();
         	if (!isRunning) {
-	        	if (!TungstenMod.BLOCK_PATH_RENDERER.isEmpty()) {
-	        		TungstenMod.BLOCK_PATH_RENDERER.clear();
+	        	if (!TungstenModRenderContainer.BLOCK_PATH_RENDERER.isEmpty()) {
+	        		TungstenModRenderContainer.BLOCK_PATH_RENDERER.clear();
 	        	}
-	        	if (!TungstenMod.RUNNING_PATH_RENDERER.isEmpty()) {
-					TungstenMod.RUNNING_PATH_RENDERER.clear();
+	        	if (!TungstenModRenderContainer.RUNNING_PATH_RENDERER.isEmpty()) {
+	        		TungstenModRenderContainer.RUNNING_PATH_RENDERER.clear();
 	        	}
-	        	if (!TungstenMod.RENDERERS.isEmpty()) {
-					TungstenMod.RENDERERS.clear();
+	        	if (!TungstenModRenderContainer.RENDERERS.isEmpty()) {
+	        		TungstenModRenderContainer.RENDERERS.clear();
 	        	}
-	        	if (!TungstenMod.TEST.isEmpty()) {
-					TungstenMod.TEST.clear();
+	        	if (!TungstenModRenderContainer.TEST.isEmpty()) {
+	        		TungstenModRenderContainer.TEST.clear();
 	        	}
         	}
         	if (clickMode != clickModeEnum.OFF && mc.options.useKey.isPressed() && !isRunning) {
@@ -166,8 +165,8 @@ public class TungstenMod implements ClientModInitializer {
 		         		TungstenMod.TARGET = newPos;
 		         		
 
-		        		if (clickMode == clickModeEnum.GOTO && !TungstenMod.PATHFINDER.active.get()) {
-		        			PATHFINDER.find(TungstenMod.mc.world, TARGET);
+		        		if (clickMode == clickModeEnum.GOTO && !TungstenModDataContainer.PATHFINDER.active.get()) {
+		        			TungstenModDataContainer.PATHFINDER.find(TungstenMod.mc.world, TARGET, TungstenMod.mc.player);
 		        		}
 	        		}
         		}

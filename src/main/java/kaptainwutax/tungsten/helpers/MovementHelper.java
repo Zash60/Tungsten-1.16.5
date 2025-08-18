@@ -4,6 +4,8 @@ import static kaptainwutax.tungsten.path.blockSpaceSearchAssist.Ternary.NO;
 import static kaptainwutax.tungsten.path.blockSpaceSearchAssist.Ternary.YES;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
+import kaptainwutax.tungsten.TungstenModRenderContainer;
 import kaptainwutax.tungsten.path.blockSpaceSearchAssist.BlockNode;
 import kaptainwutax.tungsten.path.blockSpaceSearchAssist.Ternary;
 import kaptainwutax.tungsten.render.Color;
@@ -68,7 +70,7 @@ public class MovementHelper {
 		    int z2 = end.getZ();
 		    
 		    boolean isJumpingOneBlock = y2-y1 == 1;
-			TungstenMod.TEST.clear();
+			TungstenModRenderContainer.TEST.clear();
 			BlockPos.Mutable currPos = new BlockPos.Mutable();
 			int x = x1;
 	        int y = isJumpingOneBlock ? y1+1 : y1;
@@ -84,12 +86,12 @@ public class MovementHelper {
 	      boolean shouldRender = false;
 	      boolean shouldSlow = false;
 	      if (shouldSlow) {
-			TungstenMod.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
-			TungstenMod.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
+			TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x1, y1, z1), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
+			TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x2, y2, z2), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
 	      }
 
 	        while (x != x2 || y != y2 || z != z2) {
-	        	if (TungstenMod.PATHFINDER.stop.get()) return false;
+	        	if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 	            
 	            
 	            currPos.set(x, y, z);
@@ -99,8 +101,8 @@ public class MovementHelper {
 	            	if (shouldCheckNeo) {
 		            	if (!isNeoPossible){
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -112,8 +114,8 @@ public class MovementHelper {
 	            	} else return false;
 				} else {
 					if (shouldRender) {
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 					}
 				}
 	            
@@ -128,8 +130,8 @@ public class MovementHelper {
 	            	if (shouldCheckNeo) {
 		            	if (!isNeoPossible){
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -141,8 +143,8 @@ public class MovementHelper {
 	            	} else return false;
 				} else {
 					if (shouldRender) {
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 					}
 				}
 //	        }
@@ -157,8 +159,8 @@ public class MovementHelper {
 	            	if (shouldCheckNeo) {
 		            	if (!isNeoPossible){
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -170,8 +172,8 @@ public class MovementHelper {
 	            	} else return false;
 				} else {
 					if (shouldRender) {
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 					}
 				}
 
@@ -186,8 +188,8 @@ public class MovementHelper {
 	            	if (shouldCheckNeo) {
 		            	if (!isNeoPossible){
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -199,8 +201,8 @@ public class MovementHelper {
 	            	} else return false;
 				} else {
 					if (shouldRender) {
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 					}
 				}
 	        }
@@ -251,7 +253,7 @@ public class MovementHelper {
 		        	int neoX = x-1;
 		        	int currZ = endZ > z ? z-1 : z+1;
 		        	while (currZ != endZ) {
-		        		if (TungstenMod.PATHFINDER.stop.get()) return false;
+		        		if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 		        		if (count > 5) return false;
 		        		count++;
 		            	currPos.set(neoX, y-1, currZ);
@@ -264,8 +266,8 @@ public class MovementHelper {
 		            	currPos.set(neoX, y, currZ);
 		            	if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -274,8 +276,8 @@ public class MovementHelper {
 		            		}
 		    			} else {
 		    				if (shouldRender) {
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -294,7 +296,7 @@ public class MovementHelper {
 		        	int neoX = x+1;
 		        	int currZ = endZ > z ? z-1 : z+1;
 		        	while (currZ != endZ) {
-		        		if (TungstenMod.PATHFINDER.stop.get()) return false;
+		        		if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 		        		if (count > 5) return false;
 		        		count++;
 		            	currPos.set(neoX, y-1, currZ);
@@ -307,8 +309,8 @@ public class MovementHelper {
 		            	currPos.set(neoX, y, currZ);
 		            	if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -317,8 +319,8 @@ public class MovementHelper {
 		            		}
 		    			} else {
 		    				if (shouldRender) {
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -345,7 +347,7 @@ public class MovementHelper {
 		        	int neoZ = z+1;
 		        	int currX =  endX > x ? x-1 : x+1;
 		        	while (currX != endX) {
-		        		if (TungstenMod.PATHFINDER.stop.get()) return false;
+		        		if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 		        		if (count > 5) return false;
 		        		count++;
 		            	currPos.set(currX, y-1, neoZ);
@@ -360,8 +362,8 @@ public class MovementHelper {
 		            	currPos.set(currX, y, neoZ);
 		            	if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -371,8 +373,8 @@ public class MovementHelper {
 		            		break;
 		    			} else {
 		    				if (shouldRender) {
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -392,7 +394,7 @@ public class MovementHelper {
 		        	int neoZ = z-1;
 		        	int currX =  endX > x ? x-1 : x+1;
 		        	while (currX != endX) {
-		        		if (TungstenMod.PATHFINDER.stop.get()) return false;
+		        		if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 		        		if (count > 5) return false;
 		        		count++;
 		            	currPos.set(currX, y-1, neoZ);
@@ -407,8 +409,8 @@ public class MovementHelper {
 		            	currPos.set(currX, y, neoZ);
 		            	if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -418,8 +420,8 @@ public class MovementHelper {
 		            		break;
 		    			} else {
 		    				if (shouldRender) {
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY(), currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(currPos.getX(), currPos.getY()+1, currPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -435,8 +437,8 @@ public class MovementHelper {
 	        }
 	    	if (isCornerXPossible || isCornerZPossible) {
 					if (shouldRender) {
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(endX, endY, endZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
-						TungstenMod.TEST.add(new Cuboid(new Vec3d(startPos.getX(), startPos.getY(), startPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(endX, endY, endZ), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
+						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(startPos.getX(), startPos.getY(), startPos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.GREEN));
 					}
 					x = startPos.getX();
 					y = startPos.getY();
@@ -446,19 +448,19 @@ public class MovementHelper {
 					if (isEdgeOnZ)
 		        	while (x != endX || y != endY || z != endZ) {
 		//        		if (distance >= 2) return false;
-		            	if (TungstenMod.PATHFINDER.stop.get()) return false;
+		            	if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 		                
 		
 						if (isEdgeOnZ) {
 							if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 							}
 							currPos.set(x, y, z);
 							if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			            		if (shouldRender) {
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 									if (shouldSlow) {
 										try {
 											Thread.sleep(450);
@@ -468,8 +470,8 @@ public class MovementHelper {
 			            		isCornerXPossible = false;
 			    			} else {
 			    				if (shouldRender) {
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			    				}
 			    			}
 							if (x == endX) {
@@ -482,8 +484,8 @@ public class MovementHelper {
 				                currPos.set(x, y, z);
 								if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 				            		if (shouldRender) {
-										TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-										TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+										TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+										TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 										if (shouldSlow) {
 											try {
 												Thread.sleep(450);
@@ -493,8 +495,8 @@ public class MovementHelper {
 				            		isCornerZPossible = false;
 				    			} else {
 				    				if (shouldRender) {
-				    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-				    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 				    				}
 				    			}
 							} else {
@@ -507,8 +509,8 @@ public class MovementHelper {
 				                currPos.set(x, y, z);
 								if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 				            		if (shouldRender) {
-										TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-										TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+										TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+										TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 										if (shouldSlow) {
 											try {
 												Thread.sleep(450);
@@ -518,8 +520,8 @@ public class MovementHelper {
 				            		isCornerZPossible = false;
 				    			} else {
 				    				if (shouldRender) {
-				    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-				    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 				    				}
 				    			}
 							}
@@ -533,8 +535,8 @@ public class MovementHelper {
 		        		currPos.set(x, y, z);
 						if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -544,8 +546,8 @@ public class MovementHelper {
 		            		isCornerXPossible = false;
 		    			} else {
 		    				if (shouldRender) {
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 		    				}
 		    			}
 		        		}
@@ -555,18 +557,18 @@ public class MovementHelper {
 						z = startPos.getZ();
 						if (isEdgeOnX)
 						while (x != endX || y != endY || z != endZ) {
-			            	if (TungstenMod.PATHFINDER.stop.get()) return false;
+			            	if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 							
 						if (isEdgeOnX) {
 							if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 							}
 							currPos.set(x, y, z);
 							if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			            		if (shouldRender) {
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 									if (shouldSlow) {
 										try {
 											Thread.sleep(450);
@@ -576,8 +578,8 @@ public class MovementHelper {
 			            		isCornerXPossible = false;
 			    			} else {
 			    				if (shouldRender) {
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			    				}
 			    			}
 							if (z == endZ) {
@@ -590,8 +592,8 @@ public class MovementHelper {
 				                currPos.set(x, y, z);
 								if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 				            		if (shouldRender) {
-										TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-										TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+										TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+										TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 										if (shouldSlow) {
 											try {
 												Thread.sleep(450);
@@ -601,8 +603,8 @@ public class MovementHelper {
 				            		isCornerXPossible = false;
 				    			} else {
 				    				if (shouldRender) {
-				    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-				    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 				    				}
 				    			}
 							} else {
@@ -615,8 +617,8 @@ public class MovementHelper {
 				                currPos.set(x, y, z);
 								if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 				            		if (shouldRender) {
-										TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-										TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+										TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+										TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 										if (shouldSlow) {
 											try {
 												Thread.sleep(450);
@@ -626,8 +628,8 @@ public class MovementHelper {
 				            		isCornerXPossible = false;
 				    			} else {
 				    				if (shouldRender) {
-				    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-				    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+				    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 				    				}
 				    			}
 							}
@@ -642,8 +644,8 @@ public class MovementHelper {
 		        		currPos.set(x, y, z);
 						if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 		            		if (shouldRender) {
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-								TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+								TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 								if (shouldSlow) {
 									try {
 										Thread.sleep(450);
@@ -653,8 +655,8 @@ public class MovementHelper {
 		            		isCornerXPossible = false;
 		    			} else {
 		    				if (shouldRender) {
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-		    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+		    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 		    				}
 		    			}
 						}
@@ -671,16 +673,16 @@ public class MovementHelper {
 						x = startPos.getX();
 						y = startPos.getY();
 						z = startPos.getZ();
-						TungstenMod.TEST.clear();
+						TungstenModRenderContainer.TEST.clear();
 						if (distance < 2) {
 			        	while (x != endX || y != endY || z != endZ) {
 
-			            	if (TungstenMod.PATHFINDER.stop.get()) return false;
+			            	if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 			                currPos.set(x-1, y, z-1);
 			                if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			            		if (shouldRender) {
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 									if (shouldSlow) {
 										try {
 											Thread.sleep(450);
@@ -690,8 +692,8 @@ public class MovementHelper {
 								return false;
 			    			} else {
 			    				if (shouldRender) {
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			    				}
 			    			}
 			                if (x < endX) {
@@ -703,8 +705,8 @@ public class MovementHelper {
 			                currPos.set(x, y, z);
 			                if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			            		if (shouldRender) {
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 									if (shouldSlow) {
 										try {
 											Thread.sleep(450);
@@ -714,8 +716,8 @@ public class MovementHelper {
 								return false;
 			    			} else {
 			    				if (shouldRender) {
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			    				}
 			    			}
 			            	if (y < endY) {
@@ -727,8 +729,8 @@ public class MovementHelper {
 			            		currPos.set(x, y, z);
 			                    if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			                		if (shouldRender) {
-			    						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-			    						TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+			    						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+			    						TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 			    						if (shouldSlow) {
 			    							try {
 			    								Thread.sleep(450);
@@ -738,8 +740,8 @@ public class MovementHelper {
 			    					return false;
 			        			} else {
 			        				if (shouldRender) {
-			        					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			        					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			        					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			        					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			        				}
 			        			}
 			            	}
@@ -752,8 +754,8 @@ public class MovementHelper {
 			                currPos.set(x, y, z);
 			                if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			            		if (shouldRender) {
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 									if (shouldSlow) {
 										try {
 											Thread.sleep(450);
@@ -763,8 +765,8 @@ public class MovementHelper {
 								return false;
 			    			} else {
 			    				if (shouldRender) {
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			    				}
 			    			}
 			                
@@ -777,8 +779,8 @@ public class MovementHelper {
 			
 			                if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			                	if (shouldRender) {
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x+0.5, y, z+0.5), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x+0.5, y+1, z+0.5), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x+0.5, y, z+0.5), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x+0.5, y+1, z+0.5), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 									if (shouldSlow) {
 										try {
 											Thread.sleep(450);
@@ -788,8 +790,8 @@ public class MovementHelper {
 								return false;
 			    			} else {
 			    				if (shouldRender) {
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			    				}
 			    			}
 			
@@ -802,8 +804,8 @@ public class MovementHelper {
 			                
 			                if (isObscured(world, currPos, isJumpingOneBlock, distance == 1)) {
 			                	if (shouldRender) {
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
-									TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
+									TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.RED));
 									if (shouldSlow) {
 										try {
 											Thread.sleep(450);
@@ -813,8 +815,8 @@ public class MovementHelper {
 								return false;
 			    			} else {
 			    				if (shouldRender) {
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-			    					TungstenMod.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+			    					TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(x, y+1, z), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 			    				}
 			    			}
 			            }
@@ -844,13 +846,13 @@ public class MovementHelper {
 		    boolean isStairs = block instanceof StairsBlock;
 		    boolean isLava = block == Blocks.LAVA;
 		
-		    boolean isBlockConnected = BlockStateChecker.isConnected(pos);
+		    boolean isBlockConnected = BlockStateChecker.isConnected(pos, world);
 		    
 	        boolean isAboveFullCube = aboveState.isFullCube(world, pos.up());
 	        boolean isAboveSlab = aboveBlock instanceof SlabBlock;
 	        boolean isAboveLeaves = aboveBlock instanceof LeavesBlock;
 		    boolean isAboveStairs = aboveBlock instanceof StairsBlock;
-		    boolean isAboveBlockConnected = BlockStateChecker.isConnected(pos.up());
+		    boolean isAboveBlockConnected = BlockStateChecker.isConnected(pos.up(), world);
 		    
 		    boolean isAboveX2Leaves =  world.getBlockState(pos.up(2)).getBlock() instanceof LeavesBlock;
 
@@ -869,9 +871,9 @@ public class MovementHelper {
 		    if (isBlockConnected || isAboveBlockConnected) return true;
 //		    if (!state.isAir() || !aboveState.isAir()) return true;
 		    if (isLeaves || isAboveLeaves) return true;
-//		    TungstenMod.TEST.clear();
-////			TungstenMod.TEST.add(new Cuboid(new Vec3d(pos.getX(), pos.getY()+1, pos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
-//			TungstenMod.TEST.add(new Cuboid(new Vec3d(pos.getX(), pos.getY(), pos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//		    TungstenModRenderContainer.TEST.clear();
+////			TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(pos.getX(), pos.getY()+1, pos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
+//			TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(pos.getX(), pos.getY(), pos.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), Color.WHITE));
 //			try {
 //				Thread.sleep(50);
 //			} catch (InterruptedException e) {

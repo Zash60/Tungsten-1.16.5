@@ -1,6 +1,8 @@
 package kaptainwutax.tungsten.helpers.movement;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
+import kaptainwutax.tungsten.TungstenModRenderContainer;
 import kaptainwutax.tungsten.helpers.DirectionHelper;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
 import kaptainwutax.tungsten.helpers.MovementHelper;
@@ -54,7 +56,7 @@ public class StreightMovementHelper {
 	        int endZ = endPos.getZ();
 
 	        BlockPos.Mutable currPos = new BlockPos.Mutable();
-	        TungstenMod.TEST.clear(); // Clear visual markers
+	        TungstenModRenderContainer.TEST.clear(); // Clear visual markers
 	        renderBlock(endPos, Color.BLUE);
 	        
 	        boolean isOneBlockAway = DistanceCalculator.getHorizontalEuclideanDistance(startPos, endPos) <= 1;
@@ -76,7 +78,7 @@ public class StreightMovementHelper {
 	        }
 
 	        while (x != endX || y != endY || z != endZ) {
-	            if (TungstenMod.PATHFINDER.stop.get()) return false;
+	            if (TungstenModDataContainer.PATHFINDER.stop.get()) return false;
 
 	            currPos.set(x, y, z);
 
@@ -122,8 +124,8 @@ public class StreightMovementHelper {
 
 	    private void renderBlock(BlockPos position, Color color) {
 	        if (shouldRender) {
-	            TungstenMod.TEST.add(new Cuboid(new Vec3d(position.getX(), position.getY(), position.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), color));
-	            TungstenMod.TEST.add(new Cuboid(new Vec3d(position.getX(), position.getY() + 1, position.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), color));
+	        	TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(position.getX(), position.getY(), position.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), color));
+	        	TungstenModRenderContainer.TEST.add(new Cuboid(new Vec3d(position.getX(), position.getY() + 1, position.getZ()), new Vec3d(1.0D, 1.0D, 1.0D), color));
 	        }
 	    }
 

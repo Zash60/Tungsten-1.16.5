@@ -6,6 +6,7 @@ import com.google.common.collect.Streams;
 
 import kaptainwutax.tungsten.Debug;
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.AgentChecker;
 import kaptainwutax.tungsten.helpers.BlockStateChecker;
@@ -23,7 +24,7 @@ public class SwimmingMove {
 
 	public static Node generateMove(Node parent, BlockNode nextBlockNode) {
 		double cost = 0.2;
-		WorldView world = TungstenMod.mc.world;
+		WorldView world = TungstenModDataContainer.world;
 		Agent agent = parent.agent;
 		float desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
 		float desiredPitch = (float) DirectionHelper.calcPitchFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
@@ -47,7 +48,7 @@ public class SwimmingMove {
 			
     		desiredYaw = (float) DirectionHelper.calcYawFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
     		desiredPitch = (float) DirectionHelper.calcPitchFromVec3d(agent.getPos(), nextBlockNode.getPos(true));
-    		boolean isWaterAbove = BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(newNode.agent.getBlockPos().up()));
+    		boolean isWaterAbove = BlockStateChecker.isAnyWater(TungstenModDataContainer.world.getBlockState(newNode.agent.getBlockPos().up()));
     		if (isWaterAbove || (newNode.agent.getPos().y - (int) newNode.agent.getPos().y) < 0.44) {
                 newNode = new Node(newNode, world, new PathInput(true, false, false, true, true, false, true, desiredPitch, desiredYaw + 45),
                 		new Color(0, 255, 150), newNode.cost + cost);

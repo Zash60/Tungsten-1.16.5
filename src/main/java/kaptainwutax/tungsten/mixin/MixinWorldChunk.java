@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.NbtCompound;
@@ -42,6 +43,9 @@ public abstract class MixinWorldChunk extends Chunk {
 
 	@Inject(method = "loadFromPacket", at = @At("RETURN"))
 	private void loadFromPacket(PacketByteBuf buf, Map<BlockPos, NbtCompound> blockEntityTagMap, Consumer<ChunkData.BlockEntityVisitor> consumer, CallbackInfo ci) {
+		if(this.getWorld() != TungstenModDataContainer.world) {
+			TungstenModDataContainer.world = this.getWorld();
+		}
 		if(TungstenMod.WORLD == null || this.getWorld() != TungstenMod.WORLD.parent) {
 			return;
 		}

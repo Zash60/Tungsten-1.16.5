@@ -4,14 +4,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableMap;
 
 import it.unimi.dsi.fastutil.floats.FloatArraySet;
 import it.unimi.dsi.fastutil.floats.FloatArrays;
@@ -19,14 +16,14 @@ import it.unimi.dsi.fastutil.floats.FloatSet;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import kaptainwutax.tungsten.Debug;
-import kaptainwutax.tungsten.TungstenMod;
+import kaptainwutax.tungsten.TungstenModDataContainer;
+import kaptainwutax.tungsten.TungstenModRenderContainer;
 import kaptainwutax.tungsten.helpers.render.RenderHelper;
 import kaptainwutax.tungsten.mixin.AccessorEntity;
 import kaptainwutax.tungsten.mixin.AccessorLivingEntity;
 import kaptainwutax.tungsten.path.Node;
 import kaptainwutax.tungsten.path.PathInput;
 import kaptainwutax.tungsten.render.Color;
-import kaptainwutax.tungsten.render.Cube;
 import kaptainwutax.tungsten.render.Cuboid;
 import net.minecraft.block.AbstractFireBlock;
 import net.minecraft.block.AbstractPressurePlateBlock;
@@ -53,18 +50,16 @@ import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.block.TripwireBlock;
 import net.minecraft.block.TurtleEggBlock;
 import net.minecraft.block.WitherRoseBlock;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.MovementType;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.HungerManager;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.EntityTypeTags;
 import net.minecraft.registry.tag.FluidTags;
@@ -75,16 +70,14 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.RaycastContext;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
-import net.minecraft.world.border.WorldBorder;
 
 public class Agent {
 
@@ -171,6 +164,8 @@ public class Agent {
     private List<String> extra = new ArrayList<>();
     private int scannedBlocks;
 
+    public Agent() { }
+    
     public Vec3d getPos() {
         return new Vec3d(this.posX, this.posY, this.posZ);
     }
@@ -179,8 +174,8 @@ public class Agent {
         return new BlockPos(this.blockX, this.blockY, this.blockZ);
     }
     
-    public BlockState getBlockState() {
-    	return TungstenMod.mc.world.getBlockState(getBlockPos());
+    public BlockState getBlockState(WorldView world) {
+    	return world.getBlockState(getBlockPos());
     }
 
     public void setPos(double x, double y, double z) {
@@ -1125,8 +1120,8 @@ public class Agent {
     }
 
     public int computeFallDamage(double fallDistance, float damageMultiplier) {
-    	if (TungstenMod.mc.player == null) return 0;
-    	if (TungstenMod.mc.player.getType().isIn(EntityTypeTags.FALL_DAMAGE_IMMUNE)) {
+    	if (TungstenModDataContainer.player == null) return 0;
+    	if (TungstenModDataContainer.player.getType().isIn(EntityTypeTags.FALL_DAMAGE_IMMUNE)) {
     		return 0;
     	}
         float f = this.jumpBoost < 0 ? 0.0F : (float)(this.jumpBoost + 1);
@@ -1509,14 +1504,14 @@ public class Agent {
                 player.getPos().y == this.posY ? "y" : this.posY,
                 player.getPos().z == this.posZ ? "z" : this.posZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
-            if (TungstenMod.EXECUTOR.isRunning()) {
+            if (TungstenModDataContainer.EXECUTOR.isRunning()) {
             	player.setPosition(this.posX, this.posY, this.posZ);
 //            	TungstenMod.EXECUTOR.stop = true;
 //            	TungstenMod.PATHFINDER.stop.set(true);;
 
-            	Node node = TungstenMod.EXECUTOR.getCurrentNode();
-            	if (node != null) RenderHelper.renderNode(node, TungstenMod.ERROR);
-            	TungstenMod.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
+            	Node node = TungstenModDataContainer.EXECUTOR.getCurrentNode();
+            	if (node != null) RenderHelper.renderNode(node, TungstenModRenderContainer.ERROR);
+            	TungstenModRenderContainer.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }
         }
         
@@ -1529,7 +1524,7 @@ public class Agent {
                 player.getVelocity().y == this.velY ? "y" : this.velY,
                 player.getVelocity().z == this.velZ ? "z" : this.velZ));
             // I know this is probably a really stupid way to fix a mismatch but server doesnt seem to care so I'm doing it anyway!
-            if (TungstenMod.EXECUTOR.isRunning()) {
+            if (TungstenModDataContainer.EXECUTOR.isRunning()) {
             	
             	values.add(String.format("Velocity mismatch by (%s, %s, %s)",
                         player.getVelocity().x - this.velX,
@@ -1540,9 +1535,9 @@ public class Agent {
 //            	TungstenMod.PATHFINDER.stop.set(true);;
 //            	player.setVelocity(0, 0, 0);
             	player.setVelocity(this.velX, this.velY, this.velZ);
-            	Node node = TungstenMod.EXECUTOR.getCurrentNode();
-            	if (node != null) RenderHelper.renderNode(node, TungstenMod.ERROR);
-            	TungstenMod.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
+            	Node node = TungstenModDataContainer.EXECUTOR.getCurrentNode();
+            	if (node != null) RenderHelper.renderNode(node, TungstenModRenderContainer.ERROR);
+            	TungstenModRenderContainer.ERROR.add(new Cuboid(player.getPos(), new Vec3d(0.1, 0.5, 0.1), Color.RED));
             }
         }
 
@@ -1570,8 +1565,8 @@ public class Agent {
 
         if(this.movementSpeed != player.getMovementSpeed()) {
 
-        	if (TungstenMod.LOG_DEBUG_DATA) {
-        		Node node = TungstenMod.EXECUTOR.getCurrentNode();
+        	if (TungstenModDataContainer.LOG_DEBUG_DATA) {
+        		Node node = TungstenModDataContainer.EXECUTOR.getCurrentNode();
             	if (node != null) {
     	        	StringBuilder string = new StringBuilder();
     	
@@ -1739,15 +1734,154 @@ public class Agent {
         }
     }
 
-    public static Agent of(ClientPlayerEntity player) {
+
+    public static Agent of(PlayerEntity player) {
         Agent agent = new Agent();
-        agent.keyForward = TungstenMod.mc.options.forwardKey.isPressed();
-        agent.keyBack = TungstenMod.mc.options.backKey.isPressed();
-        agent.keyLeft = TungstenMod.mc.options.leftKey.isPressed();
-        agent.keyRight = TungstenMod.mc.options.rightKey.isPressed();
-        agent.keyJump = TungstenMod.mc.options.jumpKey.isPressed();
-        agent.keySneak = TungstenMod.mc.options.sneakKey.isPressed();
-        agent.keySprint = TungstenMod.mc.options.sprintKey.isPressed();
+        agent.keyForward = PlayerInput.DEFAULT.forward();
+        agent.keyBack = PlayerInput.DEFAULT.backward();
+        agent.keyLeft = PlayerInput.DEFAULT.left();
+        agent.keyRight = PlayerInput.DEFAULT.right();
+        agent.keyJump = PlayerInput.DEFAULT.jump();
+        agent.keySneak = PlayerInput.DEFAULT.sneak();
+        agent.keySprint = PlayerInput.DEFAULT.sprint();
+
+        agent.pose = player.getPose();
+        agent.sprinting = player.isSprinting();
+        agent.inSneakingPose = player.isInSneakingPose();
+        agent.usingItem = player.isUsingItem();
+        agent.sidewaysSpeed = player.sidewaysSpeed;
+        agent.upwardSpeed = player.upwardSpeed;
+        agent.forwardSpeed = player.forwardSpeed;
+        agent.yaw = player.getYaw();
+        agent.pitch = player.getPitch();
+        agent.posX = player.getX();
+        agent.posY = player.getY();
+        agent.posZ = player.getZ();
+        agent.blockX = player.getBlockPos().getX();
+        agent.blockY = player.getBlockPos().getY();
+        agent.blockZ = player.getBlockPos().getZ();
+        agent.velX = player.getVelocity().x;
+        agent.velY = player.getVelocity().y;
+        agent.velZ = player.getVelocity().z;
+        agent.mulX = ((AccessorEntity)player).getMovementMultiplier().x;
+        agent.mulY = ((AccessorEntity)player).getMovementMultiplier().y;
+        agent.mulZ = ((AccessorEntity)player).getMovementMultiplier().z;
+        agent.fluidHeight.put(FluidTags.WATER, player.getFluidHeight(FluidTags.WATER));
+        agent.fluidHeight.put(FluidTags.LAVA, player.getFluidHeight(FluidTags.LAVA));
+        agent.submergedFluids.addAll(((AccessorEntity)player).getSubmergedFluidTag());
+        agent.firstUpdate = ((AccessorEntity)player).getFirstUpdate();
+        agent.box = player.getBoundingBox();
+        agent.dimensions = player.getDimensions(player.getPose());
+        agent.standingEyeHeight = player.getStandingEyeHeight();
+        agent.onGround = player.isOnGround();
+        agent.sleeping = player.isSleeping();
+        agent.sneaking = player.isSneaky();
+        agent.hunger = player.getHungerManager();
+        agent.sprinting = player.isSprinting();
+        agent.swimming = player.isSwimming();
+        agent.fallFlying = player.getAbilities().flying;
+        agent.stepHeight = player.getStepHeight();
+        agent.fallDistance = player.fallDistance;
+        agent.touchingWater = player.isTouchingWater();
+        agent.isSubmergedInWater = player.isSubmergedInWater();
+        agent.horizontalCollision = player.horizontalCollision;
+        agent.verticalCollision = player.verticalCollision;
+        agent.collidedSoftly = player.collidedSoftly;
+        agent.jumping = ((AccessorLivingEntity)player).getJumping();
+        agent.speed = player.hasStatusEffect(StatusEffects.SPEED) ? player.getStatusEffect(StatusEffects.SPEED).getAmplifier() : -1;
+        agent.blindness = player.hasStatusEffect(StatusEffects.BLINDNESS) ? player.getStatusEffect(StatusEffects.BLINDNESS).getAmplifier() : -1;
+        agent.jumpBoost = player.hasStatusEffect(StatusEffects.JUMP_BOOST) ? player.getStatusEffect(StatusEffects.JUMP_BOOST).getAmplifier() : -1;
+        agent.slowFalling = player.hasStatusEffect(StatusEffects.SLOW_FALLING) ? player.getStatusEffect(StatusEffects.SLOW_FALLING).getAmplifier() : -1;
+        agent.dolphinsGrace = player.hasStatusEffect(StatusEffects.DOLPHINS_GRACE) ? player.getStatusEffect(StatusEffects.DOLPHINS_GRACE).getAmplifier() : -1;
+        agent.levitation = player.hasStatusEffect(StatusEffects.LEVITATION) ? player.getStatusEffect(StatusEffects.LEVITATION).getAmplifier() : -1;
+        agent.movementSpeed = player.getMovementSpeed();
+        agent.airStrafingSpeed = 0.06f;
+        agent.jumpingCooldown = ((AccessorLivingEntity)player).getJumpingCooldown();
+        agent.hunger.setFoodLevel(player.getHungerManager().getFoodLevel());
+        agent.hunger.setSaturationLevel(player.getHungerManager().getSaturationLevel());
+        //TODO: frame.ticksToNextAutojump
+        return agent;
+    }
+
+
+    public static Agent of(PlayerEntity player, PlayerInput playerInput) {
+        Agent agent = new Agent();
+        agent.keyForward = playerInput.forward();
+        agent.keyBack = playerInput.backward();
+        agent.keyLeft = playerInput.left();
+        agent.keyRight = playerInput.right();
+        agent.keyJump = playerInput.jump();
+        agent.keySneak = playerInput.sneak();
+        agent.keySprint = playerInput.sprint();
+
+        agent.pose = player.getPose();
+        agent.sprinting = player.isSprinting();
+        agent.inSneakingPose = player.isInSneakingPose();
+        agent.usingItem = player.isUsingItem();
+        agent.sidewaysSpeed = player.sidewaysSpeed;
+        agent.upwardSpeed = player.upwardSpeed;
+        agent.forwardSpeed = player.forwardSpeed;
+        agent.yaw = player.getYaw();
+        agent.pitch = player.getPitch();
+        agent.posX = player.getX();
+        agent.posY = player.getY();
+        agent.posZ = player.getZ();
+        agent.blockX = player.getBlockPos().getX();
+        agent.blockY = player.getBlockPos().getY();
+        agent.blockZ = player.getBlockPos().getZ();
+        agent.velX = player.getVelocity().x;
+        agent.velY = player.getVelocity().y;
+        agent.velZ = player.getVelocity().z;
+        agent.mulX = ((AccessorEntity)player).getMovementMultiplier().x;
+        agent.mulY = ((AccessorEntity)player).getMovementMultiplier().y;
+        agent.mulZ = ((AccessorEntity)player).getMovementMultiplier().z;
+        agent.fluidHeight.put(FluidTags.WATER, player.getFluidHeight(FluidTags.WATER));
+        agent.fluidHeight.put(FluidTags.LAVA, player.getFluidHeight(FluidTags.LAVA));
+        agent.submergedFluids.addAll(((AccessorEntity)player).getSubmergedFluidTag());
+        agent.firstUpdate = ((AccessorEntity)player).getFirstUpdate();
+        agent.box = player.getBoundingBox();
+        agent.dimensions = player.getDimensions(player.getPose());
+        agent.standingEyeHeight = player.getStandingEyeHeight();
+        agent.onGround = player.isOnGround();
+        agent.sleeping = player.isSleeping();
+        agent.sneaking = player.isSneaky();
+        agent.hunger = player.getHungerManager();
+        agent.sprinting = player.isSprinting();
+        agent.swimming = player.isSwimming();
+        agent.fallFlying = player.getAbilities().flying;
+        agent.stepHeight = player.getStepHeight();
+        agent.fallDistance = player.fallDistance;
+        agent.touchingWater = player.isTouchingWater();
+        agent.isSubmergedInWater = player.isSubmergedInWater();
+        agent.horizontalCollision = player.horizontalCollision;
+        agent.verticalCollision = player.verticalCollision;
+        agent.collidedSoftly = player.collidedSoftly;
+        agent.jumping = ((AccessorLivingEntity)player).getJumping();
+        agent.speed = player.hasStatusEffect(StatusEffects.SPEED) ? player.getStatusEffect(StatusEffects.SPEED).getAmplifier() : -1;
+        agent.blindness = player.hasStatusEffect(StatusEffects.BLINDNESS) ? player.getStatusEffect(StatusEffects.BLINDNESS).getAmplifier() : -1;
+        agent.jumpBoost = player.hasStatusEffect(StatusEffects.JUMP_BOOST) ? player.getStatusEffect(StatusEffects.JUMP_BOOST).getAmplifier() : -1;
+        agent.slowFalling = player.hasStatusEffect(StatusEffects.SLOW_FALLING) ? player.getStatusEffect(StatusEffects.SLOW_FALLING).getAmplifier() : -1;
+        agent.dolphinsGrace = player.hasStatusEffect(StatusEffects.DOLPHINS_GRACE) ? player.getStatusEffect(StatusEffects.DOLPHINS_GRACE).getAmplifier() : -1;
+        agent.levitation = player.hasStatusEffect(StatusEffects.LEVITATION) ? player.getStatusEffect(StatusEffects.LEVITATION).getAmplifier() : -1;
+        agent.movementSpeed = player.getMovementSpeed();
+        agent.airStrafingSpeed = 0.06f;
+        agent.jumpingCooldown = ((AccessorLivingEntity)player).getJumpingCooldown();
+        agent.hunger.setFoodLevel(player.getHungerManager().getFoodLevel());
+        agent.hunger.setSaturationLevel(player.getHungerManager().getSaturationLevel());
+        //TODO: frame.ticksToNextAutojump
+        return agent;
+    }
+
+    
+    public static Agent of(ClientPlayerEntity player, GameOptions options) {
+        Agent agent = new Agent();
+        agent.keyForward = options.forwardKey.isPressed();
+        agent.keyBack = options.backKey.isPressed();
+        agent.keyLeft = options.leftKey.isPressed();
+        agent.keyRight = options.rightKey.isPressed();
+        agent.keyJump = options.jumpKey.isPressed();
+        agent.keySneak = options.sneakKey.isPressed();
+        agent.keySprint = options.sprintKey.isPressed();
 
         agent.pose = player.getPose();
         agent.sprinting = player.isSprinting();

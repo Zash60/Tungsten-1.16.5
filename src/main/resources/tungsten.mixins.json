@@ -3,10 +3,11 @@
   "minVersion": "0.8",
   "package": "kaptainwutax.tungsten.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
-  "client": [
+  "mixins": [
     "AccessorEntity",
     "AccessorLivingEntity",
+  ],
+  "client": [
     "MixinMinecraftClient",
     "MixinClientPlayerEntity",
     "MixinDebugRenderer",
