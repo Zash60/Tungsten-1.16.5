@@ -75,7 +75,9 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
 	@Inject(method = "tick", at = @At(value = "RETURN"))
 	public void end(CallbackInfo ci) {
-		if(!this.getAbilities().flying && Agent.INSTANCE != null && !TungstenModDataContainer.EXECUTOR.isRunning()) {
+		if (TungstenModDataContainer.EXECUTOR.isRunning() && TungstenModDataContainer.EXECUTOR.getCurrentTick() > 0) {
+			TungstenModDataContainer.EXECUTOR.getPath().get(TungstenModDataContainer.EXECUTOR.getCurrentTick() - 1).agent.compare((ClientPlayerEntity)(Object)this, ((ClientPlayerEntity)(Object)this).input.playerInput, true);
+		} else if(!this.getAbilities().flying && Agent.INSTANCE != null) {
 			Agent.INSTANCE.compare((ClientPlayerEntity)(Object)this, ((ClientPlayerEntity)(Object)this).input.playerInput, false);
 		}
 	}

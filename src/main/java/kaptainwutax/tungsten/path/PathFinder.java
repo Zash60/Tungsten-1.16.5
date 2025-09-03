@@ -12,6 +12,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -25,6 +27,7 @@ import kaptainwutax.tungsten.TungstenModDataContainer;
 import kaptainwutax.tungsten.TungstenModRenderContainer;
 import kaptainwutax.tungsten.agent.Agent;
 import kaptainwutax.tungsten.helpers.AgentChecker;
+import kaptainwutax.tungsten.helpers.ArrayChunkSplitter;
 import kaptainwutax.tungsten.helpers.BlockShapeChecker;
 import kaptainwutax.tungsten.helpers.BlockStateChecker;
 import kaptainwutax.tungsten.helpers.DistanceCalculator;
@@ -47,6 +50,8 @@ import net.minecraft.world.WorldView;
 
 public class PathFinder {
 
+	
+	ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	public AtomicBoolean active = new AtomicBoolean(false);
 	public AtomicBoolean stop = new AtomicBoolean(false);
 	public AtomicBoolean waitForPathExecutor = new AtomicBoolean(false);
@@ -216,8 +221,6 @@ public class PathFinder {
 	        		TungstenModRenderContainer.RENDERERS.clear();
 	        		TungstenModRenderContainer.TEST.clear();
 	    			closed.clear();
-	    			int pathSize = TungstenModDataContainer.EXECUTOR.getPath().size();
-	    			int tick = TungstenModDataContainer.EXECUTOR.getCurrentTick();
 					try {
 						Thread.sleep(500);
 					} catch (InterruptedException e) {
@@ -226,8 +229,7 @@ public class PathFinder {
 					}
 	    			while (TungstenModDataContainer.EXECUTOR.isRunning()) {
 	    				if (stop.get()) return;
-	    				if (tick / ((float) pathSize) > 0.75) break;
-	    				tick = TungstenModDataContainer.EXECUTOR.getCurrentTick();
+	    				if (TungstenModDataContainer.EXECUTOR.getPath().size() - TungstenModDataContainer.EXECUTOR.getCurrentTick() < 50) break;
 						try {
 							Thread.sleep(500);
 						} catch (InterruptedException e) {
@@ -235,10 +237,24 @@ public class PathFinder {
 							e.printStackTrace();
 						}
 					}
-	    			PathFinder.blockPath = findBlockPath(world, lastBlockNode, target, player);
-	    		    if (blockPath.isPresent()) {
-	    		    	NEXT_CLOSEST_BLOCKNODE_IDX.set(1);
-	    	        	RenderHelper.renderBlockPath(blockPath.get(), NEXT_CLOSEST_BLOCKNODE_IDX.get());
+	    			int attempt = 0;
+	    			while (attempt < 3) {
+	    				PathFinder.blockPath = findBlockPath(world, lastBlockNode, target, player);
+		    		    if (blockPath.isPresent()) {
+		    		    	NEXT_CLOSEST_BLOCKNODE_IDX.set(1);
+		    	        	RenderHelper.renderBlockPath(blockPath.get(), NEXT_CLOSEST_BLOCKNODE_IDX.get());
+		    	        	break;
+		    	        }
+		    		    attempt++;
+		    		    try {
+							Thread.sleep(250);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+	    		    if (blockPath.isEmpty()) {
+	    	        	Debug.logMessage("Failed to find furhter path!");
 	    	        }
 	    		    continue;
 	            }
@@ -264,7 +280,7 @@ public class PathFinder {
 
 	        if ((numNodesConsidered & (timeCheckInterval - 1)) == 0) {
 	            if (handleTimeout(startTime, primaryTimeoutTime, next, target, start, player, closed)) {
-	                return;
+	                continue;
 	            }
 	        }
 	        
@@ -666,10 +682,10 @@ public class PathFinder {
 //        if (player.getPos().distanceTo(result.get().getFirst().agent.getPos()) < 1 && next.agent.getPos().distanceTo(target) > 1) {
 	    if (setCurrentPath(target, start, player)) {
 	    	Debug.logMessage("Time ran out!");
+		    return true;
 	    }
-	    return false;
 //        }
-//        return false;
+        return false;
     }
     
     private static boolean setCurrentPath(Vec3d target, Node start, PlayerEntity player) {
@@ -685,7 +701,8 @@ public class PathFinder {
         	newStart = TungstenModDataContainer.PATHFINDER.initializeStartNode(result.get().get(result.get().size()-2), target);
         }
         if (newStart == null) return false;
-        if (TungstenModDataContainer.EXECUTOR.isRunning() && TungstenModDataContainer.EXECUTOR.getPath().getLast().hashCode() == result.get().getLast().hashCode()) return false;
+        if (TungstenModDataContainer.EXECUTOR.isRunning() && TungstenModDataContainer.EXECUTOR.getPath().getLast().hashCode(1, false) == result.get().getLast().hashCode(1, false)) return false;
+        if (TungstenModDataContainer.EXECUTOR.isRunning() && TungstenModDataContainer.EXECUTOR.getPath().getFirst().hashCode(1, false) == result.get().getFirst().hashCode(1, false)) return false;
         TungstenModDataContainer.EXECUTOR.addPath(result.get());
 //        RenderHelper.renderPathCurrentlyExecuted();
         for (int i = 0; i < COEFFICIENTS.length; i++) {
@@ -751,112 +768,185 @@ public class PathFinder {
 	        double closestBlockVolume = BlockShapeChecker.getShapeVolume(nextBlockNode.getBlockPos().down(), world);
 	        boolean isSmallBlock = closestBlockVolume > 0 && closestBlockVolume < 1;
 			
-			ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+			List<Callable<Void>> tasks = new ArrayList<>();
 			
-			List<Callable<Void>> tasks = children.stream().map(child -> (Callable<Void>) () -> {
-				if (stop.get()) return null;
-		    	if (Thread.currentThread().isInterrupted()) return null;
+			if (children.size() > 5) {
+				Node[][] chunks = ArrayChunkSplitter.splitArrayIntoChunksOfX(children.toArray(new Node[children.size()]), children.size()/5);
 				
-				// Check if this child is too close to any already accepted child
-			    for (Node other : validChildren) {
-			    	if (Thread.currentThread().isInterrupted()) return null;
-			        double distance = other.agent.getPos().distanceTo(child.agent.getPos());
-	
-			        boolean bothClimbing = other.agent.isClimbing(world) && child.agent.isClimbing(world);
-			        boolean bothNotClimbing = !other.agent.isClimbing(world) && !child.agent.isClimbing(world);
-	
-			        if ((bothClimbing && distance < 0.03) || (bothNotClimbing && distance < 0.094) || (isSmallBlock && distance < 0.2)) {
-			            return null; // too close to existing child
-			        }
-			    }
+				for (int i = 0; i < chunks.length; i++) {
+					Node[] nodes = chunks[i];
+					tasks.add(() -> {
+						for (int j = 0; j < nodes.length; j++) {
+							Node child = nodes[j];
+							if (stop.get()) return null;
+					    	if (Thread.currentThread().isInterrupted()) return null;
+							
+							// Check if this child is too close to any already accepted child
+						    for (Node other : validChildren) {
+						    	if (Thread.currentThread().isInterrupted()) return null;
+						        double distance = other.agent.getPos().distanceTo(child.agent.getPos());
 				
-				boolean skip = filterChidren(child, lastBlockNode, nextBlockNode, isSmallBlock, world);
+						        boolean bothClimbing = other.agent.isClimbing(world) && child.agent.isClimbing(world);
+						        boolean bothNotClimbing = !other.agent.isClimbing(world) && !child.agent.isClimbing(world);
 				
-				if (skip || checkForFallDamage(child, world)) {
-					return null;
+						        if ((bothClimbing && distance < 0.03) || (bothNotClimbing && distance < 0.094) || (isSmallBlock && distance < 0.2)) {
+						            return null; // too close to existing child
+						        }
+						    }
+							
+							boolean skip = filterChidren(child, lastBlockNode, nextBlockNode, isSmallBlock, world);
+							
+							if (skip || checkForFallDamage(child, world)) {
+								return null;
+							}
+							
+							validChildren.add(child);
+						}
+						return null;
+					});
 				}
 				
-				validChildren.add(child);
-				return null;
-			}).collect(Collectors.toList());
-			
-			for (Iterator iterator = tasks.iterator(); iterator.hasNext();) {
-				Callable<Void> callable = (Callable<Void>) iterator.next();
-				try {
-					callable.call();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			
-//			try {
-//				executor.invokeAll(tasks);
-//				executor.shutdown();
-//				if (!executor.awaitTermination(5, TimeUnit.MILLISECONDS)) {
-//					executor.shutdownNow();
-//		        }
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			} finally {
-//				executor.shutdown();
-//			}
-			
-			
-			executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-			Object openSetLock = new Object();  // if openSet is not thread-safe
-		
-			List<Callable<Void>> processingTasks = validChildren.stream()
-			    .map(child -> (Callable<Void>) () -> {
+			} else {
+				tasks = children.stream().map(child -> (Callable<Void>) () -> {
 					if (stop.get()) return null;
 			    	if (Thread.currentThread().isInterrupted()) return null;
-			        updateNode(world, parent, child, target, TARGET, blockPath.get(), closed);
-
-			        synchronized (openSetLock) {
-			            if (child.isOpen()) {
-			                openSet.update(child);
-			            } else {
-			                openSet.insert(child);
-			            }
-			        }
-
-			        // Update best heuristic safely
-			        synchronized (bestHeuristicSoFar) {
-			            if (updateBestSoFar(child, target, bestHeuristicSoFar)) {
-			                failing.set(false);
-			            }
-			        }
-
-			        // Optional: render node for debugging
-//			         RenderHelper.renderNode(child);
-
-			        return null;
-			    })
-			    .collect(Collectors.toList());
-
-			
-
-			for (Iterator iterator = processingTasks.iterator(); iterator.hasNext();) {
-				Callable<Void> callable = (Callable<Void>) iterator.next();
-				try {
-					callable.call();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+					
+					// Check if this child is too close to any already accepted child
+				    for (Node other : validChildren) {
+				    	if (Thread.currentThread().isInterrupted()) return null;
+				        double distance = other.agent.getPos().distanceTo(child.agent.getPos());
+		
+				        boolean bothClimbing = other.agent.isClimbing(world) && child.agent.isClimbing(world);
+				        boolean bothNotClimbing = !other.agent.isClimbing(world) && !child.agent.isClimbing(world);
+		
+				        if ((bothClimbing && distance < 0.03) || (bothNotClimbing && distance < 0.094) || (isSmallBlock && distance < 0.2)) {
+				            return null; // too close to existing child
+				        }
+				    }
+					
+					boolean skip = filterChidren(child, lastBlockNode, nextBlockNode, isSmallBlock, world);
+					
+					if (skip || checkForFallDamage(child, world)) {
+						return null;
+					}
+					
+					validChildren.add(child);
+					return null;
+				}).collect(Collectors.toList());
 			}
 			
-//			try {
-//			    executor.invokeAll(processingTasks);
-//		    	executor.shutdown();
-//				if (!executor.awaitTermination(5, TimeUnit.MILLISECONDS)) {
-//					executor.shutdownNow();
-//		        }
-//			} catch (InterruptedException e) {
-//			    e.printStackTrace();
-//			} finally {
-//			    executor.shutdown();
+//			for (Iterator iterator = tasks.iterator(); iterator.hasNext();) {
+//				Callable<Void> callable = (Callable<Void>) iterator.next();
+//				try {
+//					callable.call();
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
 //			}
+			
+			try {
+				List<Future<Void>> futures = executor.invokeAll(tasks);
+				
+				for (Future<Void> future : futures) {
+					if (!future.isDone()) {
+						Thread.sleep(50);
+					}
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			Object openSetLock = new Object();  // if openSet is not thread-safe
+			
+			List<Callable<Void>> processingTasks = new ArrayList<>();
+					
+			if (validChildren.size() > 25) {
+				Node[][] chunks = ArrayChunkSplitter.splitArrayIntoChunksOfX(validChildren.toArray(new Node[validChildren.size()]), children.size()/25);
+				
+				for (int i = 0; i < chunks.length; i++) {
+					Node[] nodes = chunks[i];
+					tasks.add(() -> {
+						for (int j = 0; j < nodes.length; j++) {
+							Node child = nodes[j];
+							if (stop.get()) return null;
+					    	if (Thread.currentThread().isInterrupted()) return null;
+					        updateNode(world, parent, child, target, TARGET, blockPath.get(), closed);
+		
+					        synchronized (openSetLock) {
+					            if (child.isOpen()) {
+					                openSet.update(child);
+					            } else {
+					                openSet.insert(child);
+					            }
+					        }
+		
+					        // Update best heuristic safely
+					        synchronized (bestHeuristicSoFar) {
+					            if (updateBestSoFar(child, target, bestHeuristicSoFar)) {
+					                failing.set(false);
+					            }
+					        }
+						}
+						return null;
+					});
+				}
+				
+			} else {
+		
+				processingTasks = validChildren.stream()
+				    .map(child -> (Callable<Void>) () -> {
+						if (stop.get()) return null;
+				    	if (Thread.currentThread().isInterrupted()) return null;
+				        updateNode(world, parent, child, target, TARGET, blockPath.get(), closed);
+	
+				        synchronized (openSetLock) {
+				            if (child.isOpen()) {
+				                openSet.update(child);
+				            } else {
+				                openSet.insert(child);
+				            }
+				        }
+	
+				        // Update best heuristic safely
+				        synchronized (bestHeuristicSoFar) {
+				            if (updateBestSoFar(child, target, bestHeuristicSoFar)) {
+				                failing.set(false);
+				            }
+				        }
+	
+				        // Optional: render node for debugging
+	//			         RenderHelper.renderNode(child);
+	
+				        return null;
+				    })
+				    .collect(Collectors.toList());
+
+			}
+
+//			for (Iterator iterator = processingTasks.iterator(); iterator.hasNext();) {
+//				Callable<Void> callable = (Callable<Void>) iterator.next();
+//				try {
+//					callable.call();
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+			
+		    try {
+				List<Future<Void>> futures = executor.invokeAll(processingTasks);
+				
+				for (Future<Void> future : futures) {
+					if (!future.isDone()) {
+						Thread.sleep(50);
+					}
+				}
+				
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 				
 //			for (Node child : validChildren) {
 //				updateNode(world, parent, child, target, blockPath.get(), closed);

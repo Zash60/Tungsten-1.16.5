@@ -110,7 +110,7 @@ public class BlockSpacePathFinder {
 				TungstenModRenderContainer.RENDERERS.clear();
 				List<BlockNode> path = generatePath(next, world);
 
-				Debug.logMessage("Found rought path! " + path.size());
+				Debug.logMessage("Found rought path!");
 				
 				return Optional.of(path);
 			}
@@ -167,7 +167,6 @@ public class BlockSpacePathFinder {
             if (dist > MIN_DIST_PATH * MIN_DIST_PATH) { // square the comparison since distFromStartSq is squared
                 BlockNode n = bestSoFar[i];
 				List<BlockNode> path = generatePath(n, world);
-				Debug.logMessage(path.size() + "");
 				if (path.size() > 1) return Optional.of(path);
             }
         }
@@ -195,7 +194,7 @@ public class BlockSpacePathFinder {
 //	    double tentativeCost = (childBlock instanceof LadderBlock || childBlock instanceof VineBlock ? 12.2 : 0) + ActionCosts.WALK_ONE_BLOCK_COST; // Assuming uniform cost for each step
 //	    tentativeCost += BlockStateChecker.isAnyWater(TungstenMod.mc.world.getBlockState(child.getBlockPos())) ? 50 : 0; // Assuming uniform cost for each step
 
-	    double estimatedCostToGoal = computeHeuristic(childPos, target, world) + DistanceCalculator.getHorizontalEuclideanDistance(current.getPos(true), child.getPos(true)) * 4 + (current.getBlockPos().getY() != child.getBlockPos().getY() ? 5.8 : 0);
+	    double estimatedCostToGoal = computeHeuristic(childPos, target, world) + DistanceCalculator.getHorizontalEuclideanDistance(current.getPos(true), child.getPos(true)) * 8 + (current.getBlockPos().getY() != child.getBlockPos().getY() ? 5.8 : 0);
 
 	    child.previous = current;
 //	    child.cost = tentativeCost;
@@ -209,7 +208,7 @@ public class BlockSpacePathFinder {
 	    for (int i = 0; i < COEFFICIENTS.length; i++) {
 	        double heuristic = child.combinedCost / COEFFICIENTS[i];
 	        if (bestHeuristicSoFar[i] - heuristic > minimumImprovement && bestHeuristicSoFar[i] != heuristic) {
-		        Debug.logMessage((bestHeuristicSoFar[i] - heuristic) + "");
+//		        Debug.logMessage((bestHeuristicSoFar[i] - heuristic) + "");
 //		        	RenderHelper.renderPathSoFar(child);
 //		        	try {
 //						Thread.sleep(6);

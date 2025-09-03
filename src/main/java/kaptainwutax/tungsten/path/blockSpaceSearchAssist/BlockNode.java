@@ -327,52 +327,40 @@ public class BlockNode {
 	    int distanceWanted = d;
 	    int finalYMax = (int) Math.ceil(yMax);
 
-	    ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        IntStream.range(generateDeep ? -64 : -4, finalYMax).parallel().forEach(py -> {
+            int localD;
 
-	    try {
-	    	executor.submit(() ->
-	            IntStream.range(generateDeep ? -64 : -4, finalYMax).parallel().forEach(py -> {
-	                int localD;
+            if (py < 0 && py < -5) {
+                double t = Math.sqrt((2 * py * -1) / g);
+                localD = (int) Math.ceil(v_sprint * t);
+            } else {
+                localD = distanceWanted + 1;
+            }
 
-	                if (py < 0 && py < -5) {
-	                    double t = Math.sqrt((2 * py * -1) / g);
-	                    localD = (int) Math.ceil(v_sprint * t);
-	                } else {
-	                    localD = distanceWanted + 1;
-	                }
+            // Center node
+            nodes.add(new BlockNode(this.x, this.y + py, this.z, goal, this, ActionCosts.WALK_ONE_BLOCK_COST, this.player));
 
-	                // Center node
-	                nodes.add(new BlockNode(this.x, this.y + py, this.z, goal, this, ActionCosts.WALK_ONE_BLOCK_COST, this.player));
+            for (int id = 1; id <= localD; id++) {
+                int px = id, pz = 0;
+                int dx = -1, dz = 1;
+                int n = id * 4;
 
-	                for (int id = 1; id <= localD; id++) {
-	                    int px = id, pz = 0;
-	                    int dx = -1, dz = 1;
-	                    int n = id * 4;
+                for (int i = 0; i < n; i++) {
+                    if (px == id && dx > 0) dx = -1;
+                    else if (px == -id && dx < 0) dx = 1;
 
-	                    for (int i = 0; i < n; i++) {
-	                        if (px == id && dx > 0) dx = -1;
-	                        else if (px == -id && dx < 0) dx = 1;
+                    if (pz == id && dz > 0) dz = -1;
+                    else if (pz == -id && dz < 0) dz = 1;
 
-	                        if (pz == id && dz > 0) dz = -1;
-	                        else if (pz == -id && dz < 0) dz = 1;
+                    px += dx;
+                    pz += dz;
 
-	                        px += dx;
-	                        pz += dz;
-
-	                        BlockNode newNode = new BlockNode(this.x + px, this.y + py, this.z + pz, goal, this,
-	                                ActionCosts.WALK_ONE_BLOCK_COST, this.player);
-	                        nodes.add(newNode);
-	                    }
-	                }
-	            })
-	        );
-	    	executor.shutdown();
-			executor.awaitTermination(2, TimeUnit.SECONDS);
-	    } catch (InterruptedException e) {
-	        e.printStackTrace();
-	    } finally {
-	    	executor.shutdown();
-	    }
+                    BlockNode newNode = new BlockNode(this.x + px, this.y + py, this.z + pz, goal, this,
+                            ActionCosts.WALK_ONE_BLOCK_COST, this.player);
+                    nodes.add(newNode);
+                }
+            }
+        });
 
 	    return new ArrayList<>(nodes);
 	}
