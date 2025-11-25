@@ -1,6 +1,8 @@
 package kaptainwutax.tungsten.agent;
 
 import net.minecraft.block.ShapeContext;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.FlowableFluid; // Importante
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
@@ -36,6 +38,12 @@ public class AgentShapeContext implements ShapeContext {
     @Override
     public boolean isAbove(VoxelShape shape, BlockPos pos, boolean defaultValue) {
         return this.minY > (double)pos.getY() + shape.getMax(Direction.Axis.Y) - (double)1.0E-5f;
+    }
+
+    // Metodo que faltava
+    @Override
+    public boolean canWalkOnFluid(FluidState state, FlowableFluid fluid) {
+        return false; // Implementacao padrao simples
     }
 
 }
