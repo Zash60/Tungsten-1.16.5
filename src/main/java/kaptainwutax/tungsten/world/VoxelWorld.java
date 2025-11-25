@@ -33,15 +33,9 @@ public class VoxelWorld implements WorldView {
         this.chunks.defaultReturnValue(VoxelChunk.EMPTY);
     }
 
-    // 1.16.5 does not support getBottomY or HeightLimitView directly in interface
-    // So we hardcode standard overworld/nether behavior for old versions
-    public int getBottomY() {
-        return 0;
-    }
-
-    public int getHeight() {
-        return 256;
-    }
+    // Metodos hardcoded para 1.16
+    public int getBottomY() { return 0; }
+    public int getHeight() { return 256; }
 
     @Override
     public boolean isChunkLoaded(int chunkX, int chunkZ) {
@@ -51,7 +45,7 @@ public class VoxelWorld implements WorldView {
     @Override
     public BlockState getBlockState(BlockPos pos) {
         int x = pos.getX();
-        int y = pos.getY(); // 1.16 starts at 0
+        int y = pos.getY(); 
         int z = pos.getZ();
         long id = 0L;
         return this.chunks.get(id).getBlockState(x, y, z);
@@ -78,7 +72,8 @@ public class VoxelWorld implements WorldView {
 
     @Override
     public List<VoxelShape> getEntityCollisions(@Nullable Entity entity, Box box) {
-        return this.parent.getEntityCollisions(entity, box);
+        // 1.16.5: Requer predicado como terceiro argumento. Null aceita tudo.
+        return this.parent.getEntityCollisions(entity, box, null);
     }
 
     @Nullable
@@ -102,7 +97,6 @@ public class VoxelWorld implements WorldView {
         return this.parent.getBiomeAccess();
     }
 
-    // 1.16 does not use RegistryEntry for biomes here
     @Override
     public Biome getGeneratorStoredBiome(int biomeX, int biomeY, int biomeZ) {
         return this.parent.getGeneratorStoredBiome(biomeX, biomeY, biomeZ);
