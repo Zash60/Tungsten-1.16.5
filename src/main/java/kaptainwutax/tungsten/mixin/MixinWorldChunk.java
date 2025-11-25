@@ -3,7 +3,7 @@ package kaptainwutax.tungsten.mixin;
 import kaptainwutax.tungsten.TungstenMod;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.CompoundTag; // Na 1.16.5 yarn é CompoundTag
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -19,18 +19,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(WorldChunk.class)
 public abstract class MixinWorldChunk {
 
-    // Shadows sao necessarios para acessar metodos da classe alvo
 	@Shadow public abstract World getWorld();
 	@Shadow public abstract BlockState getBlockState(BlockPos pos);
 	@Shadow public abstract FluidState getFluidState(BlockPos pos);
 
-    // Assinatura corrigida para 1.16.5
 	@Inject(method = "loadFromPacket", at = @At("RETURN"))
 	private void loadFromPacket(@Nullable BiomeArray biomes, PacketByteBuf buf, CompoundTag nbt, int verticalStripBitmask, CallbackInfo ci) {
 		if(TungstenMod.WORLD == null || this.getWorld() != TungstenMod.WORLD.parent) {
 			return;
 		}
-        // Logica comentada
 	}
 
 }
