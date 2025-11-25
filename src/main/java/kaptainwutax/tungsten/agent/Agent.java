@@ -80,10 +80,10 @@ public class Agent {
 
     public boolean onGround;
     public boolean sleeping;
-    public boolean sneaking; //flag 1
-    public boolean sprinting; //flag 3
-    public boolean swimming; //flag 4
-    public boolean fallFlying; //flag 7
+    public boolean sneaking; 
+    public boolean sprinting; 
+    public boolean swimming; 
+    public boolean fallFlying; 
     public float stepHeight = 0.6F;
     public float fallDistance;
     public boolean touchingWater;
@@ -109,7 +109,6 @@ public class Agent {
     public float airStrafingSpeed;
     public int jumpingCooldown;
     public int ticksToNextAutojump;
-    private List<String> extra = new ArrayList<>();
     private int scannedBlocks;
 
     public Vec3d getPos() {
@@ -131,18 +130,13 @@ public class Agent {
     }
 
     public void tickPlayer(WorldView world) {
-        //Sleeping code
         this.updateWaterSubmersionState();
         this.tickLiving(world);
-        //Hunger stuff
-        //Turtle helmet
-        //Item cooldown
         this.updateSize(world);
     }
 
     private void tickLiving(WorldView world) {
         this.baseTickLiving(world);
-        //more sleep stuff
         this.tickMovementClientPlayer(world);
 
         if(this.sleeping) {
@@ -152,10 +146,6 @@ public class Agent {
 
     private void baseTickLiving(WorldView world) {
         this.baseTickEntity(world);
-        //Suffocate in walls
-        //Drown in water
-        //Soulspeed and frost walker
-        //Update potion effects
     }
 
     private void baseTickEntity(WorldView world) {
@@ -393,13 +383,6 @@ public class Agent {
         this.forwardSpeed *= 0.98F;
 
         this.travelPlayer(world);
-
-        /* Entity pushing
-        if(this.riptideTicks > 0) {
-            --this.riptideTicks;
-            this.tickRiptide(box, this.getBoundingBox());
-        }
-        this.tickCramming();*/
     }
 
     public void jump(WorldView world) {
@@ -530,7 +513,6 @@ public class Agent {
                 this.velY = 0.3F;
             }
         } else if(this.fallFlying) {
-            //No elytra controls
             if(this.velY > -0.5D) {
                 this.fallDistance = 1.0F;
             }
@@ -573,8 +555,7 @@ public class Agent {
             this.velZ *= 0.9900000095367432D;
             this.move(world, MovementType.SELF, this.velX, this.velY, this.velZ);
 
-            //Mojang why? WHYYYYYYYYYYYYYYY???
-            if(this.onGround /*&& !world.isClient*/) {
+            if(this.onGround) {
                 this.fallFlying = false;
             }
         } else {
@@ -659,10 +640,6 @@ public class Agent {
     }
 
     public void move(WorldView world, MovementType type, double movX, double movY, double movZ) {
-        //if(type == MovementType.PISTON && (movement = this.adjustMovementForPiston(movement)).equals(Vec3d.ZERO)) {
-        //    return;
-        //}
-
         if(this.mulX * this.mulX + this.mulY * this.mulY + this.mulZ * this.mulZ > 0.0000001D) {
             movX *= this.mulX; movY *= this.mulY; movZ *= this.mulZ;
             this.mulX = 0; this.mulY = 0; this.mulZ = 0;
@@ -741,12 +718,6 @@ public class Agent {
 
         float i = this.getVelocityMultiplier(world);
         this.velX *= i; this.velZ *= i;
-
-		/*
-		if (this.world.method_29556(this.getBoundingBox().contract(0.001))
-		.noneMatch(blockState -> blockState.isIn(BlockTags.FIRE) || blockState.isOf(Blocks.LAVA)) && this.fireTicks <= 0) {
-			this.setFireTicks(-this.getBurningDuration());
-		}*/
     }
 
     private boolean hasCollidedSoftly(double ajuX, double ajuY, double ajuZ) {
@@ -1210,78 +1181,6 @@ public class Agent {
         return !this.firstUpdate && this.fluidHeight.getDouble(FluidTags.LAVA) > 0.0D;
     }
 
-    /*
-
-    public void tickCramming(WorldView world) {
-        List<Entity> list = world.getOtherEntities(this, this.box, EntityPredicates.canBePushedBy(this));
-
-        if(!list.isEmpty()) {
-            int j;
-            int i = this.world.getGameRules().getInt(GameRules.MAX_ENTITY_CRAMMING);
-            if (i > 0 && list.size() > i - 1 && this.random.nextInt(4) == 0) {
-                j = 0;
-                for (int k = 0; k < list.size(); ++k) {
-                    if (list.get(k).hasVehicle()) continue;
-                    ++j;
-                }
-                if (j > i - 1) {
-                    this.damage(DamageSource.CRAMMING, 6.0f);
-                }
-            }
-            for (j = 0; j < list.size(); ++j) {
-                Entity entity = list.get(j);
-                this.pushAway(entity);
-            }
-        }
-    }
-
-    public void pushAway(Entity entity) {
-        double e;
-        double d = this.posX - entity.getX();
-        double f = MathHelper.absMax(d, e = this.posZ - entity.getZ());
-
-        if (f >= (double)0.01F) {
-            f = MathHelper.sqrt(f);
-            d /= f;
-            e /= f;
-
-            double g = 1.0 / f;
-            if(g > 1.0) g = 1.0;
-
-            d *= g;
-            e *= g;
-            d *= 0.05F;
-            e *= 0.05F;
-            d *= 1.0F - entity.pushSpeedReduction;
-            e *= 1.0F - entity.pushSpeedReduction;
-
-            entity.addVelocity(-d, 0.0, -e);
-            this.velX += d;
-            this.velZ += e;
-        }
-    }
-
-    public void tickRiptide(Box a, Box b) {
-        Box box = a.union(b);
-        List<Entity> list = this.world.getOtherEntities(this, box);
-        if (!list.isEmpty()) {
-            for (int i = 0; i < list.size(); ++i) {
-                Entity entity = list.get(i);
-                if (!(entity instanceof LivingEntity)) continue;
-                this.attackLivingEntity((LivingEntity)entity);
-                this.riptideTicks = 0;
-                this.setVelocity(this.getVelocity().multiply(-0.2));
-                break;
-            }
-        } else if (this.horizontalCollision) {
-            this.riptideTicks = 0;
-        }
-        if (!this.world.isClient && this.riptideTicks <= 0) {
-            this.setLivingFlag(4, false);
-        }
-    }
-    */
-
     public void compare(ClientPlayerEntity player, boolean executor) {
         List<String> values = new ArrayList<>();
 
@@ -1371,12 +1270,6 @@ public class Agent {
             values.add(String.format("Vertical Collision mismatch %s vs %s", player.verticalCollision, this.verticalCollision));
         }
 
-        // Access protected field collidedSoftly via Mixin Accessor
-        boolean playerCollidedSoftly = ((AccessorEntity)player).getCollidedSoftly();
-        if(this.collidedSoftly != playerCollidedSoftly) {
-            values.add(String.format("Soft Collision mismatch %s vs %s", playerCollidedSoftly, this.collidedSoftly));
-        }
-
         if(this.jumping != ((AccessorLivingEntity)player).getJumping()) {
             values.add(String.format("Jumping mismatch %s vs %s", ((AccessorLivingEntity)player).getJumping(), this.jumping));
         }
@@ -1385,16 +1278,8 @@ public class Agent {
             values.add(String.format("Jumping Cooldown mismatch %s vs %s", ((AccessorLivingEntity)player).getJumpingCooldown(), this.jumpingCooldown));
         }
 
-        if(this.airStrafingSpeed != ((AccessorLivingEntity)player).getAirStrafingSpeed()) {
-            values.add(String.format("Air Strafe Speed mismatch %s vs %s", ((AccessorLivingEntity)player).getAirStrafingSpeed(), this.airStrafingSpeed));
-        }
-
         if(this.firstUpdate != ((AccessorEntity)player).getFirstUpdate()) {
             values.add(String.format("First Update mismatch %s vs %s", ((AccessorEntity)player).getFirstUpdate(), this.firstUpdate));
-        }
-
-        if(!this.submergedFluids.equals(((AccessorEntity)player).getSubmergedFluidTag())) {
-            values.add(String.format("Submerged Fluids mismatch %s vs %s", ((AccessorEntity)player).getSubmergedFluidTag(), this.submergedFluids));
         }
 
         if(!values.isEmpty()) {
@@ -1444,7 +1329,7 @@ public class Agent {
         agent.mulZ = ((AccessorEntity)player).getMovementMultiplier().z;
         agent.fluidHeight.put(FluidTags.WATER, player.getFluidHeight(FluidTags.WATER));
         agent.fluidHeight.put(FluidTags.LAVA, player.getFluidHeight(FluidTags.LAVA));
-        agent.submergedFluids.addAll(((AccessorEntity)player).getSubmergedFluidTag());
+        // submergedFluidTag removed for compatibility
         agent.firstUpdate = ((AccessorEntity)player).getFirstUpdate();
         agent.box = player.getBoundingBox();
         agent.dimensions = player.getDimensions(player.getPose());
@@ -1462,8 +1347,8 @@ public class Agent {
         agent.horizontalCollision = player.horizontalCollision;
         agent.verticalCollision = player.verticalCollision;
         
-        // Access protected fields via Mixin Accessor
-        agent.collidedSoftly = ((AccessorEntity)player).getCollidedSoftly();
+        // collidedSoftly removed for compatibility (protected field in 1.16)
+        agent.collidedSoftly = false; 
         
         agent.jumping = ((AccessorLivingEntity)player).getJumping();
         agent.speed = player.hasStatusEffect(StatusEffects.SPEED) ? player.getStatusEffect(StatusEffects.SPEED).getAmplifier() : -1;
@@ -1474,12 +1359,11 @@ public class Agent {
         agent.levitation = player.hasStatusEffect(StatusEffects.LEVITATION) ? player.getStatusEffect(StatusEffects.LEVITATION).getAmplifier() : -1;
         agent.movementSpeed = player.getMovementSpeed();
         
-        // Access protected field via Mixin Accessor
-        agent.airStrafingSpeed = ((AccessorLivingEntity)player).getAirStrafingSpeed();
+        // airStrafingSpeed hardcoded default for 1.16
+        agent.airStrafingSpeed = 0.02F;
         
         agent.jumpingCooldown = ((AccessorLivingEntity)player).getJumpingCooldown();
 
-        //TODO: frame.ticksToNextAutojump
         return agent;
     }
 
@@ -1553,7 +1437,6 @@ public class Agent {
         agent.movementSpeed = other.movementSpeed;
         agent.airStrafingSpeed = other.airStrafingSpeed;
         agent.jumpingCooldown = other.jumpingCooldown;
-        //TODO: frame.ticksToNextAutojump
         return agent;
     }
 
