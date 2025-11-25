@@ -27,6 +27,7 @@ import net.minecraft.world.RaycastContext;
 import net.minecraft.world.WorldView;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Agent {
 
@@ -191,7 +192,6 @@ public class Agent {
         double e = (float)blockPos.getY() + fluidState.getHeight(world, blockPos);
 
         if(e > d) {
-            // 1.16.5 logic (streamTags doesn't exist)
             if(fluidState.isIn(FluidTags.WATER)) this.submergedFluids.add(FluidTags.WATER);
             if(fluidState.isIn(FluidTags.LAVA)) this.submergedFluids.add(FluidTags.LAVA);
         }
@@ -275,7 +275,6 @@ public class Agent {
     }
 
     public final float getEyeHeight(EntityPose pose, EntityDimensions dimensions) {
-         // Java 8 Switch Statement
          switch(pose) {
             case SWIMMING:
             case FALL_FLYING:
@@ -643,8 +642,8 @@ public class Agent {
                 return false;
             }
         }
-        // Na 1.16.5, getEntityCollisions requer 3 argumentos (Entity, Box, Predicate)
-        return world.getEntityCollisions(null, box, null).isEmpty();
+
+        return !world.getEntityCollisions(null, box, null).findAny().isPresent();
     }
 
     private boolean doesNotCollide(WorldView world, double offsetX, double offsetY, double offsetZ) {
@@ -681,7 +680,6 @@ public class Agent {
 
 		if(magnitudeSq > 0.0000001D) {
             if(this.fallDistance != 0.0F && magnitudeSq >= 1.0D) {
-                // Na 1.16.5, usamos FluidHandling.ANY ou similar
                 RaycastContext context = new AgentRaycastContext(this.getPos(), this.getPos().add(new Vec3d(ajuX, ajuY, ajuZ)),
                     RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.ANY, this);
                 BlockHitResult result = world.raycast(context);
@@ -757,7 +755,6 @@ public class Agent {
         double e = MathHelper.cos(f);
         double g = (double)this.sidewaysSpeed * e - (double)this.forwardSpeed * d;
         double h = (double)this.forwardSpeed * e + (double)this.sidewaysSpeed * d;
-        // MathHelper.square removido para compatibilidade
         double i = (g * g) + (h * h);
         double j = (ajuX * ajuX) + (ajuZ * ajuZ);
 
@@ -804,7 +801,7 @@ public class Agent {
 
     private Vec3d adjustMovementForCollisions(WorldView world, Vec3d movement) {
         Box box = this.box;
-        List<VoxelShape> list = world.getEntityCollisions(null, box.stretch(movement), null);
+        List<VoxelShape> list = world.getEntityCollisions(null, box.stretch(movement), null).collect(Collectors.toList());
         Vec3d vec3d = movement.lengthSquared() == 0.0 ? movement : this.adjustMovementForCollisions(movement, box, world, list);
         boolean bl = movement.x != vec3d.x;
         boolean bl2 = movement.y != vec3d.y;
@@ -816,13 +813,12 @@ public class Agent {
             Vec3d vec3d3 = this.adjustMovementForCollisions(new Vec3d(0.0, this.stepHeight, 0.0), box.stretch(movement.x, 0.0, movement.z), world, list);
             Vec3d vec3d4 = this.adjustMovementForCollisions(new Vec3d(movement.x, 0.0, movement.z), box.offset(vec3d3), world, list).add(vec3d3);
 
-            // horizontalLengthSquared nao existe na 1.16.5, calculo manual x*x + z*z
             double vec3d4HorizSq = vec3d4.x * vec3d4.x + vec3d4.z * vec3d4.z;
             double vec3d2HorizSq = vec3d2.x * vec3d2.x + vec3d2.z * vec3d2.z;
 
             if(vec3d3.y < (double)this.stepHeight && vec3d4HorizSq > vec3d2HorizSq) {
                 vec3d2 = vec3d4;
-                vec3d2HorizSq = vec3d4HorizSq; // atualizar cache
+                vec3d2HorizSq = vec3d4HorizSq;
             }
 
             double vec3dHorizSq = vec3d.x * vec3d.x + vec3d.z * vec3d.z;
@@ -836,7 +832,6 @@ public class Agent {
     }
 
     public Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, WorldView world, List<VoxelShape> entityCollisions) {
-        // Builder simples sem expectedSize para compatibilidade
         ImmutableList.Builder<VoxelShape> builder = ImmutableList.builder();
 
         if(!entityCollisions.isEmpty()) {
@@ -1045,6 +1040,8 @@ public class Agent {
                                 this.fallDistance = 0.0F;
                             }
                         } else if(state.getBlock() instanceof CactusBlock) {
+                            //damage the entity
+                        } else if(state.getBlock() instanceof CampfireBlock) {
                             //damage the entity
                         } else if(state.getBlock() instanceof CampfireBlock) {
                             //damage the entity
@@ -1373,10 +1370,11 @@ public class Agent {
         if(this.verticalCollision != player.verticalCollision) {
             values.add(String.format("Vertical Collision mismatch %s vs %s", player.verticalCollision, this.verticalCollision));
         }
-        
-        // Uso de acessor ou cast se necessario, mantendo logica original
-        if(this.collidedSoftly != player.collidedSoftly) {
-            values.add(String.format("Soft Collision mismatch %s vs %s", player.collidedSoftly, this.collidedSoftly));
+
+        // Access protected field collidedSoftly via Mixin Accessor
+        boolean playerCollidedSoftly = ((AccessorEntity)player).getCollidedSoftly();
+        if(this.collidedSoftly != playerCollidedSoftly) {
+            values.add(String.format("Soft Collision mismatch %s vs %s", playerCollidedSoftly, this.collidedSoftly));
         }
 
         if(this.jumping != ((AccessorLivingEntity)player).getJumping()) {
@@ -1387,7 +1385,6 @@ public class Agent {
             values.add(String.format("Jumping Cooldown mismatch %s vs %s", ((AccessorLivingEntity)player).getJumpingCooldown(), this.jumpingCooldown));
         }
 
-        // Se airStrafingSpeed for protegido, usar accessor
         if(this.airStrafingSpeed != ((AccessorLivingEntity)player).getAirStrafingSpeed()) {
             values.add(String.format("Air Strafe Speed mismatch %s vs %s", ((AccessorLivingEntity)player).getAirStrafingSpeed(), this.airStrafingSpeed));
         }
@@ -1464,8 +1461,10 @@ public class Agent {
         agent.isSubmergedInWater = player.isSubmergedInWater();
         agent.horizontalCollision = player.horizontalCollision;
         agent.verticalCollision = player.verticalCollision;
-        // collidedSoftly is protected in Entity
-        agent.collidedSoftly = player.collidedSoftly; 
+        
+        // Access protected fields via Mixin Accessor
+        agent.collidedSoftly = ((AccessorEntity)player).getCollidedSoftly();
+        
         agent.jumping = ((AccessorLivingEntity)player).getJumping();
         agent.speed = player.hasStatusEffect(StatusEffects.SPEED) ? player.getStatusEffect(StatusEffects.SPEED).getAmplifier() : -1;
         agent.blindness = player.hasStatusEffect(StatusEffects.BLINDNESS) ? player.getStatusEffect(StatusEffects.BLINDNESS).getAmplifier() : -1;
@@ -1474,8 +1473,10 @@ public class Agent {
         agent.dolphinsGrace = player.hasStatusEffect(StatusEffects.DOLPHINS_GRACE) ? player.getStatusEffect(StatusEffects.DOLPHINS_GRACE).getAmplifier() : -1;
         agent.levitation = player.hasStatusEffect(StatusEffects.LEVITATION) ? player.getStatusEffect(StatusEffects.LEVITATION).getAmplifier() : -1;
         agent.movementSpeed = player.getMovementSpeed();
-        // airStrafingSpeed is protected in LivingEntity, need Accessor
+        
+        // Access protected field via Mixin Accessor
         agent.airStrafingSpeed = ((AccessorLivingEntity)player).getAirStrafingSpeed();
+        
         agent.jumpingCooldown = ((AccessorLivingEntity)player).getJumpingCooldown();
 
         //TODO: frame.ticksToNextAutojump
@@ -1559,4 +1560,5 @@ public class Agent {
     public static Agent of(Agent agent, PathInput input) {
         return of(agent, input.forward, input.back, input.left, input.right, input.jump, input.sneak, input.sprint, input.pitch, input.yaw);
     }
-				}
+
+	}
