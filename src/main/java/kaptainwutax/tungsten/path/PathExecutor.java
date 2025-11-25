@@ -2,7 +2,7 @@ package kaptainwutax.tungsten.path;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.options.GameOptions; // Tentando manter plural, se falhar é singular
 
 import java.util.List;
 
@@ -23,7 +23,6 @@ public class PathExecutor {
     }
 
     public void tick(ClientPlayerEntity player, GameOptions options) {
-        // Na 1.16.5, a tecla de interações sociais é keySocialInteractions
         if(MinecraftClient.getInstance().options.keySocialInteractions.isPressed()) {
             this.tick = this.path.size();
         }
@@ -44,7 +43,7 @@ public class PathExecutor {
 
             if(node.input != null) {
                 if (player.isFallFlying()) {
-                    // Logica de elytra se necessario
+                    // Logic check
                 }
                 options.keyForward.setPressed(node.input.forward);
                 options.keyBack.setPressed(node.input.back);
