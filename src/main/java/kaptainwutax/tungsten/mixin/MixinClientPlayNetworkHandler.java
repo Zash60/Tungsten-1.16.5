@@ -27,7 +27,7 @@ public class MixinClientPlayNetworkHandler {
         if(TungstenMod.EXECUTOR.isRunning()) {
             ClientPlayerEntity player = MinecraftClient.getInstance().player;
 
-            if(player != null && packet.id() == player.getId()) {
+            if(player != null && packet.id() == player.getEntityId()) {
                 ci.cancel();
             }
         }
@@ -41,7 +41,7 @@ public class MixinClientPlayNetworkHandler {
 
             if(player != null) {
                 this.connection.send(new TeleportConfirmC2SPacket(packet.getTeleportId()));
-                this.connection.send(new PlayerMoveC2SPacket.Full(player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch(), player.isOnGround()));
+                this.connection.send(new PlayerMoveC2SPacket.Both(player.getX(), player.getY(), player.getZ(), player.yaw, player.pitch, player.isOnGround()));
             }
 
             ci.cancel();
