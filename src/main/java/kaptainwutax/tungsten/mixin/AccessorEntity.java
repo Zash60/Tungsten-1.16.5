@@ -21,4 +21,7 @@ public interface AccessorEntity {
 	@Accessor("submergedFluidTag")
 	Set<Tag<Fluid>> getSubmergedFluidTag();
 
+    @Accessor("collidedSoftly")
+    boolean getCollidedSoftly();
+
 }
