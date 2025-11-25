@@ -79,10 +79,10 @@ public class Agent {
 
     public boolean onGround;
     public boolean sleeping;
-    public boolean sneaking; 
-    public boolean sprinting; 
-    public boolean swimming; 
-    public boolean fallFlying; 
+    public boolean sneaking; //flag 1
+    public boolean sprinting; //flag 3
+    public boolean swimming; //flag 4
+    public boolean fallFlying; //flag 7
     public float stepHeight = 0.6F;
     public float fallDistance;
     public boolean touchingWater;
@@ -130,13 +130,18 @@ public class Agent {
     }
 
     public void tickPlayer(WorldView world) {
+        //Sleeping code
         this.updateWaterSubmersionState();
         this.tickLiving(world);
+        //Hunger stuff
+        //Turtle helmet
+        //Item cooldown
         this.updateSize(world);
     }
 
     private void tickLiving(WorldView world) {
         this.baseTickLiving(world);
+        //more sleep stuff
         this.tickMovementClientPlayer(world);
 
         if(this.sleeping) {
@@ -146,6 +151,10 @@ public class Agent {
 
     private void baseTickLiving(WorldView world) {
         this.baseTickEntity(world);
+        //Suffocate in walls
+        //Drown in water
+        //Soulspeed and frost walker
+        //Update potion effects
     }
 
     private void baseTickEntity(WorldView world) {
@@ -182,9 +191,9 @@ public class Agent {
         double e = (float)blockPos.getY() + fluidState.getHeight(world, blockPos);
 
         if(e > d) {
-             // 1.16.5 simplistic approach
-             if(fluidState.isIn(FluidTags.WATER)) this.submergedFluids.add(FluidTags.WATER);
-             if(fluidState.isIn(FluidTags.LAVA)) this.submergedFluids.add(FluidTags.LAVA);
+            // 1.16.5 logic (streamTags doesn't exist)
+            if(fluidState.isIn(FluidTags.WATER)) this.submergedFluids.add(FluidTags.WATER);
+            if(fluidState.isIn(FluidTags.LAVA)) this.submergedFluids.add(FluidTags.LAVA);
         }
     }
 
@@ -265,9 +274,9 @@ public class Agent {
         }
     }
 
-    // Converted from switch expression (Java 17) to switch statement (Java 8)
     public final float getEyeHeight(EntityPose pose, EntityDimensions dimensions) {
-        switch(pose) {
+         // Java 8 Switch Statement
+         switch(pose) {
             case SWIMMING:
             case FALL_FLYING:
             case SPIN_ATTACK:
@@ -287,7 +296,7 @@ public class Agent {
 
         this.inSneakingPose = !this.swimming && this.wouldPoseNotCollide(world, EntityPose.CROUCHING)
             && (this.input.sneaking || !this.sleeping && !this.wouldPoseNotCollide(world, EntityPose.STANDING));
-        this.input.tick(this.inSneakingPose || (this.pose == EntityPose.SWIMMING && !this.touchingWater), 0.3F);
+        this.input.tick(this.inSneakingPose || (this.pose == EntityPose.SWIMMING && !this.touchingWater));
 
         if(this.usingItem) {
             this.input.movementSideways *= 0.2F;
@@ -385,6 +394,13 @@ public class Agent {
         this.forwardSpeed *= 0.98F;
 
         this.travelPlayer(world);
+
+        /* Entity pushing
+        if(this.riptideTicks > 0) {
+            --this.riptideTicks;
+            this.tickRiptide(box, this.getBoundingBox());
+        }
+        this.tickCramming();*/
     }
 
     public void jump(WorldView world) {
@@ -515,6 +531,7 @@ public class Agent {
                 this.velY = 0.3F;
             }
         } else if(this.fallFlying) {
+            //No elytra controls
             if(this.velY > -0.5D) {
                 this.fallDistance = 1.0F;
             }
@@ -557,7 +574,8 @@ public class Agent {
             this.velZ *= 0.9900000095367432D;
             this.move(world, MovementType.SELF, this.velX, this.velY, this.velZ);
 
-            if(this.onGround) {
+            //Mojang why? WHYYYYYYYYYYYYYYY???
+            if(this.onGround /*&& !world.isClient*/) {
                 this.fallFlying = false;
             }
         } else {
@@ -625,8 +643,8 @@ public class Agent {
                 return false;
             }
         }
-
-        return world.getEntityCollisions(null, box).isEmpty();
+        // Na 1.16.5, getEntityCollisions requer 3 argumentos (Entity, Box, Predicate)
+        return world.getEntityCollisions(null, box, null).isEmpty();
     }
 
     private boolean doesNotCollide(WorldView world, double offsetX, double offsetY, double offsetZ) {
@@ -642,6 +660,10 @@ public class Agent {
     }
 
     public void move(WorldView world, MovementType type, double movX, double movY, double movZ) {
+        //if(type == MovementType.PISTON && (movement = this.adjustMovementForPiston(movement)).equals(Vec3d.ZERO)) {
+        //    return;
+        //}
+
         if(this.mulX * this.mulX + this.mulY * this.mulY + this.mulZ * this.mulZ > 0.0000001D) {
             movX *= this.mulX; movY *= this.mulY; movZ *= this.mulZ;
             this.mulX = 0; this.mulY = 0; this.mulZ = 0;
@@ -659,9 +681,9 @@ public class Agent {
 
 		if(magnitudeSq > 0.0000001D) {
             if(this.fallDistance != 0.0F && magnitudeSq >= 1.0D) {
-                // FALLDAMAGE_RESETTING doesnt exist in 1.16, approximated
+                // Na 1.16.5, usamos FluidHandling.ANY ou similar
                 RaycastContext context = new AgentRaycastContext(this.getPos(), this.getPos().add(new Vec3d(ajuX, ajuY, ajuZ)),
-                    RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.WATER, this);
+                    RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.ANY, this);
                 BlockHitResult result = world.raycast(context);
 
                 if(result.getType() != HitResult.Type.MISS) {
@@ -721,6 +743,12 @@ public class Agent {
 
         float i = this.getVelocityMultiplier(world);
         this.velX *= i; this.velZ *= i;
+
+		/*
+		if (this.world.method_29556(this.getBoundingBox().contract(0.001))
+		.noneMatch(blockState -> blockState.isIn(BlockTags.FIRE) || blockState.isOf(Blocks.LAVA)) && this.fireTicks <= 0) {
+			this.setFireTicks(-this.getBurningDuration());
+		}*/
     }
 
     private boolean hasCollidedSoftly(double ajuX, double ajuY, double ajuZ) {
@@ -729,8 +757,9 @@ public class Agent {
         double e = MathHelper.cos(f);
         double g = (double)this.sidewaysSpeed * e - (double)this.forwardSpeed * d;
         double h = (double)this.forwardSpeed * e + (double)this.sidewaysSpeed * d;
-        double i = MathHelper.square(g) + MathHelper.square(h);
-        double j = MathHelper.square(ajuX) + MathHelper.square(ajuZ);
+        // MathHelper.square removido para compatibilidade
+        double i = (g * g) + (h * h);
+        double j = (ajuX * ajuX) + (ajuZ * ajuZ);
 
         if(i < (double)1.0E-5F || j < (double)1.0E-5F) {
             return false;
@@ -775,7 +804,7 @@ public class Agent {
 
     private Vec3d adjustMovementForCollisions(WorldView world, Vec3d movement) {
         Box box = this.box;
-        List<VoxelShape> list = world.getEntityCollisions(null, box.stretch(movement));
+        List<VoxelShape> list = world.getEntityCollisions(null, box.stretch(movement), null);
         Vec3d vec3d = movement.lengthSquared() == 0.0 ? movement : this.adjustMovementForCollisions(movement, box, world, list);
         boolean bl = movement.x != vec3d.x;
         boolean bl2 = movement.y != vec3d.y;
@@ -787,11 +816,18 @@ public class Agent {
             Vec3d vec3d3 = this.adjustMovementForCollisions(new Vec3d(0.0, this.stepHeight, 0.0), box.stretch(movement.x, 0.0, movement.z), world, list);
             Vec3d vec3d4 = this.adjustMovementForCollisions(new Vec3d(movement.x, 0.0, movement.z), box.offset(vec3d3), world, list).add(vec3d3);
 
-            if(vec3d3.y < (double)this.stepHeight && vec3d4.horizontalLengthSquared() > vec3d2.horizontalLengthSquared()) {
+            // horizontalLengthSquared nao existe na 1.16.5, calculo manual x*x + z*z
+            double vec3d4HorizSq = vec3d4.x * vec3d4.x + vec3d4.z * vec3d4.z;
+            double vec3d2HorizSq = vec3d2.x * vec3d2.x + vec3d2.z * vec3d2.z;
+
+            if(vec3d3.y < (double)this.stepHeight && vec3d4HorizSq > vec3d2HorizSq) {
                 vec3d2 = vec3d4;
+                vec3d2HorizSq = vec3d4HorizSq; // atualizar cache
             }
 
-            if(vec3d2.horizontalLengthSquared() > vec3d.horizontalLengthSquared()) {
+            double vec3dHorizSq = vec3d.x * vec3d.x + vec3d.z * vec3d.z;
+
+            if(vec3d2HorizSq > vec3dHorizSq) {
                 return vec3d2.add(this.adjustMovementForCollisions(new Vec3d(0.0, -vec3d2.y + movement.y, 0.0), box.offset(vec3d2), world, list));
             }
         }
@@ -800,7 +836,8 @@ public class Agent {
     }
 
     public Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, WorldView world, List<VoxelShape> entityCollisions) {
-        ImmutableList.Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(entityCollisions.size() + 1);
+        // Builder simples sem expectedSize para compatibilidade
+        ImmutableList.Builder<VoxelShape> builder = ImmutableList.builder();
 
         if(!entityCollisions.isEmpty()) {
             builder.addAll(entityCollisions);
@@ -854,7 +891,7 @@ public class Agent {
 
         BlockState ladder = world.getBlockState(new BlockPos(this.blockX, this.blockY - 1, this.blockZ));
 
-        if(ladder.getBlock() == Blocks.LADDER && ladder.get(LadderBlock.FACING) == trapdoor.get(TrapdoorBlock.FACING)) {
+        if(ladder.isOf(Blocks.LADDER) && ladder.get(LadderBlock.FACING) == trapdoor.get(TrapdoorBlock.FACING)) {
             return true;
         }
 
@@ -937,6 +974,8 @@ public class Agent {
             this.checkWaterState(world);
         }
 
+        //add soulspeed movement boost
+
         if(this.onGround) {
             if(this.fallDistance > 0.0F) {
                 if(landedState.getBlock() instanceof BedBlock) {
@@ -965,6 +1004,7 @@ public class Agent {
         int i = this.computeFallDamage(fallDistance, damageMultiplier);
 
         if(i > 0) {
+            //this.damage(DamageSource.FALL, i);
         	this.velX = 0;
         	this.velZ = 0;
             return true;
@@ -1005,8 +1045,6 @@ public class Agent {
                                 this.fallDistance = 0.0F;
                             }
                         } else if(state.getBlock() instanceof CactusBlock) {
-                            //damage the entity
-                        } else if(state.getBlock() instanceof CampfireBlock) {
                             //damage the entity
                         } else if(state.getBlock() instanceof CampfireBlock) {
                             //damage the entity
@@ -1175,8 +1213,197 @@ public class Agent {
         return !this.firstUpdate && this.fluidHeight.getDouble(FluidTags.LAVA) > 0.0D;
     }
 
+    /*
+
+    public void tickCramming(WorldView world) {
+        List<Entity> list = world.getOtherEntities(this, this.box, EntityPredicates.canBePushedBy(this));
+
+        if(!list.isEmpty()) {
+            int j;
+            int i = this.world.getGameRules().getInt(GameRules.MAX_ENTITY_CRAMMING);
+            if (i > 0 && list.size() > i - 1 && this.random.nextInt(4) == 0) {
+                j = 0;
+                for (int k = 0; k < list.size(); ++k) {
+                    if (list.get(k).hasVehicle()) continue;
+                    ++j;
+                }
+                if (j > i - 1) {
+                    this.damage(DamageSource.CRAMMING, 6.0f);
+                }
+            }
+            for (j = 0; j < list.size(); ++j) {
+                Entity entity = list.get(j);
+                this.pushAway(entity);
+            }
+        }
+    }
+
+    public void pushAway(Entity entity) {
+        double e;
+        double d = this.posX - entity.getX();
+        double f = MathHelper.absMax(d, e = this.posZ - entity.getZ());
+
+        if (f >= (double)0.01F) {
+            f = MathHelper.sqrt(f);
+            d /= f;
+            e /= f;
+
+            double g = 1.0 / f;
+            if(g > 1.0) g = 1.0;
+
+            d *= g;
+            e *= g;
+            d *= 0.05F;
+            e *= 0.05F;
+            d *= 1.0F - entity.pushSpeedReduction;
+            e *= 1.0F - entity.pushSpeedReduction;
+
+            entity.addVelocity(-d, 0.0, -e);
+            this.velX += d;
+            this.velZ += e;
+        }
+    }
+
+    public void tickRiptide(Box a, Box b) {
+        Box box = a.union(b);
+        List<Entity> list = this.world.getOtherEntities(this, box);
+        if (!list.isEmpty()) {
+            for (int i = 0; i < list.size(); ++i) {
+                Entity entity = list.get(i);
+                if (!(entity instanceof LivingEntity)) continue;
+                this.attackLivingEntity((LivingEntity)entity);
+                this.riptideTicks = 0;
+                this.setVelocity(this.getVelocity().multiply(-0.2));
+                break;
+            }
+        } else if (this.horizontalCollision) {
+            this.riptideTicks = 0;
+        }
+        if (!this.world.isClient && this.riptideTicks <= 0) {
+            this.setLivingFlag(4, false);
+        }
+    }
+    */
+
     public void compare(ClientPlayerEntity player, boolean executor) {
-        // Implementation remains similar, removed detailed logging for brevity but structure is same
+        List<String> values = new ArrayList<>();
+
+        if(this.posX != player.getX() || this.posY != player.getY() || this.posZ != player.getZ()) {
+            values.add(String.format("Position mismatch (%s, %s, %s) vs (%s, %s, %s)",
+                player.getPos().x == this.posX ? "x" : player.getPos().x,
+                player.getPos().y == this.posY ? "y" : player.getPos().y,
+                player.getPos().z == this.posZ ? "z" : player.getPos().z,
+                player.getPos().x == this.posX ? "x" : this.posX,
+                player.getPos().y == this.posY ? "y" : this.posY,
+                player.getPos().z == this.posZ ? "z" : this.posZ));
+        }
+
+        if(this.velX != player.getVelocity().x || this.velY != player.getVelocity().y || this.velZ != player.getVelocity().z) {
+            values.add(String.format("Velocity mismatch (%s, %s, %s) vs (%s, %s, %s)",
+                player.getVelocity().x,
+                player.getVelocity().y,
+                player.getVelocity().z,
+                player.getVelocity().x == this.velX ? "x" : this.velX,
+                player.getVelocity().y == this.velY ? "y" : this.velY,
+                player.getVelocity().z == this.velZ ? "z" : this.velZ));
+        }
+
+        if(this.mulX != ((AccessorEntity)player).getMovementMultiplier().x
+            || this.mulY != ((AccessorEntity)player).getMovementMultiplier().y
+            || this.mulZ != ((AccessorEntity)player).getMovementMultiplier().z) {
+            values.add(String.format("Movement Multiplier mismatch (%s, %s, %s) vs (%s, %s, %s)",
+                ((AccessorEntity)player).getMovementMultiplier().x,
+                ((AccessorEntity)player).getMovementMultiplier().y,
+                ((AccessorEntity)player).getMovementMultiplier().z,
+                ((AccessorEntity)player).getMovementMultiplier().x == this.mulX ? "x" : this.mulX,
+                ((AccessorEntity)player).getMovementMultiplier().y == this.mulY ? "y" : this.mulY,
+                ((AccessorEntity)player).getMovementMultiplier().z == this.mulZ ? "z" : this.mulZ));
+        }
+
+        if(this.forwardSpeed != player.forwardSpeed || this.sidewaysSpeed != player.sidewaysSpeed || this.upwardSpeed != player.upwardSpeed) {
+            values.add(String.format("Input Speed mismatch (%s, %s, %s) vs (%s, %s, %s)",
+                player.forwardSpeed == this.forwardSpeed ? "f" : player.forwardSpeed,
+                player.upwardSpeed == this.upwardSpeed ? "u" : player.upwardSpeed,
+                player.sidewaysSpeed == this.sidewaysSpeed ? "s" : player.sidewaysSpeed,
+                player.forwardSpeed == this.forwardSpeed ? "f" : this.forwardSpeed,
+                player.upwardSpeed == this.upwardSpeed ? "u" : this.upwardSpeed,
+                player.sidewaysSpeed == this.sidewaysSpeed ? "s" : this.sidewaysSpeed));
+        }
+
+        if(this.movementSpeed != player.getMovementSpeed()) {
+            values.add(String.format("Movement Speed mismatch %f vs %f", player.getMovementSpeed(), this.movementSpeed));
+        }
+
+        if(this.pose != player.getPose()) {
+            values.add(String.format("Pose mismatch %s vs %s", player.getPose(), this.pose));
+        }
+
+        if(this.isSubmergedInWater != player.isSubmergedInWater()) {
+            values.add(String.format("Sprinting mismatch %s vs %s", player.isSprinting(), this.sprinting));
+        }
+
+        if(this.touchingWater != player.isTouchingWater()) {
+            values.add(String.format("Touching water mismatch %s vs %s", player.isTouchingWater(), this.touchingWater));
+        }
+
+        if(this.isSubmergedInWater != player.isSubmergedInWater()) {
+            values.add(String.format("Submerged in water mismatch %s vs %s", player.isSubmergedInWater(), this.isSubmergedInWater));
+        }
+
+	    if(this.input.sneaking != player.input.sneaking) {
+		    values.add(String.format("Sneaking mismatch %s vs %s", player.input.sneaking, this.input.sneaking));
+	    }
+
+        if(this.swimming != player.isSwimming()) {
+            values.add(String.format("Swimming mismatch %s vs %s", player.isSwimming(), this.swimming));
+        }
+
+        if(this.standingEyeHeight != player.getStandingEyeHeight()) {
+            values.add(String.format("Eye height mismatch %s vs %s", player.getStandingEyeHeight(), this.standingEyeHeight));
+        }
+
+        if(this.fallDistance != player.fallDistance) {
+            values.add(String.format("Fall distance mismatch %s vs %s", player.fallDistance, this.fallDistance));
+        }
+
+        if(this.horizontalCollision != player.horizontalCollision) {
+            values.add(String.format("Horizontal Collision mismatch %s vs %s", player.horizontalCollision, this.horizontalCollision));
+        }
+
+        if(this.verticalCollision != player.verticalCollision) {
+            values.add(String.format("Vertical Collision mismatch %s vs %s", player.verticalCollision, this.verticalCollision));
+        }
+        
+        // Uso de acessor ou cast se necessario, mantendo logica original
+        if(this.collidedSoftly != player.collidedSoftly) {
+            values.add(String.format("Soft Collision mismatch %s vs %s", player.collidedSoftly, this.collidedSoftly));
+        }
+
+        if(this.jumping != ((AccessorLivingEntity)player).getJumping()) {
+            values.add(String.format("Jumping mismatch %s vs %s", ((AccessorLivingEntity)player).getJumping(), this.jumping));
+        }
+
+        if(this.jumpingCooldown != ((AccessorLivingEntity)player).getJumpingCooldown()) {
+            values.add(String.format("Jumping Cooldown mismatch %s vs %s", ((AccessorLivingEntity)player).getJumpingCooldown(), this.jumpingCooldown));
+        }
+
+        // Se airStrafingSpeed for protegido, usar accessor
+        if(this.airStrafingSpeed != ((AccessorLivingEntity)player).getAirStrafingSpeed()) {
+            values.add(String.format("Air Strafe Speed mismatch %s vs %s", ((AccessorLivingEntity)player).getAirStrafingSpeed(), this.airStrafingSpeed));
+        }
+
+        if(this.firstUpdate != ((AccessorEntity)player).getFirstUpdate()) {
+            values.add(String.format("First Update mismatch %s vs %s", ((AccessorEntity)player).getFirstUpdate(), this.firstUpdate));
+        }
+
+        if(!this.submergedFluids.equals(((AccessorEntity)player).getSubmergedFluidTag())) {
+            values.add(String.format("Submerged Fluids mismatch %s vs %s", ((AccessorEntity)player).getSubmergedFluidTag(), this.submergedFluids));
+        }
+
+        if(!values.isEmpty()) {
+            System.out.println("Tick " + player.age + " ===========================================");
+            values.forEach(System.out::println);
+        }
     }
 
     public static Agent of(ClientPlayerEntity player) {
@@ -1237,7 +1464,8 @@ public class Agent {
         agent.isSubmergedInWater = player.isSubmergedInWater();
         agent.horizontalCollision = player.horizontalCollision;
         agent.verticalCollision = player.verticalCollision;
-        agent.collidedSoftly = player.collidedSoftly;
+        // collidedSoftly is protected in Entity
+        agent.collidedSoftly = player.collidedSoftly; 
         agent.jumping = ((AccessorLivingEntity)player).getJumping();
         agent.speed = player.hasStatusEffect(StatusEffects.SPEED) ? player.getStatusEffect(StatusEffects.SPEED).getAmplifier() : -1;
         agent.blindness = player.hasStatusEffect(StatusEffects.BLINDNESS) ? player.getStatusEffect(StatusEffects.BLINDNESS).getAmplifier() : -1;
@@ -1246,9 +1474,11 @@ public class Agent {
         agent.dolphinsGrace = player.hasStatusEffect(StatusEffects.DOLPHINS_GRACE) ? player.getStatusEffect(StatusEffects.DOLPHINS_GRACE).getAmplifier() : -1;
         agent.levitation = player.hasStatusEffect(StatusEffects.LEVITATION) ? player.getStatusEffect(StatusEffects.LEVITATION).getAmplifier() : -1;
         agent.movementSpeed = player.getMovementSpeed();
-        agent.airStrafingSpeed = player.airStrafingSpeed;
+        // airStrafingSpeed is protected in LivingEntity, need Accessor
+        agent.airStrafingSpeed = ((AccessorLivingEntity)player).getAirStrafingSpeed();
         agent.jumpingCooldown = ((AccessorLivingEntity)player).getJumpingCooldown();
 
+        //TODO: frame.ticksToNextAutojump
         return agent;
     }
 
@@ -1322,10 +1552,11 @@ public class Agent {
         agent.movementSpeed = other.movementSpeed;
         agent.airStrafingSpeed = other.airStrafingSpeed;
         agent.jumpingCooldown = other.jumpingCooldown;
+        //TODO: frame.ticksToNextAutojump
         return agent;
     }
 
     public static Agent of(Agent agent, PathInput input) {
         return of(agent, input.forward, input.back, input.left, input.right, input.jump, input.sneak, input.sprint, input.pitch, input.yaw);
     }
-	}
+				}
