@@ -24,7 +24,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 	@Inject(method = "tick", at = @At("HEAD"))
 	public void start(CallbackInfo ci) {
 		if(TungstenMod.EXECUTOR.isRunning()) {
-            // Atualizado: nao passa mais 'options'
+            // Chamada atualizada sem o segundo argumento
 			TungstenMod.EXECUTOR.tick((ClientPlayerEntity)(Object)this);
 		}
 
