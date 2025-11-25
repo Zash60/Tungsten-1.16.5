@@ -13,7 +13,6 @@ public interface AccessorLivingEntity {
 	@Accessor
 	int getJumpingCooldown();
 
-    @Accessor
-    float getAirStrafingSpeed();
+    // 'airStrafingSpeed' não existe na 1.16.5 (hardcoded no vanilla)
 
 }
