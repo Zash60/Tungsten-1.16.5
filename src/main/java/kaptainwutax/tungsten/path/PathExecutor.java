@@ -2,7 +2,7 @@ package kaptainwutax.tungsten.path;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.options.GameOptions; // Package moved in newer versions
+import net.minecraft.client.options.GameOptions;
 
 import java.util.List;
 
@@ -13,53 +13,54 @@ public class PathExecutor {
 
     public PathExecutor() {}
 
-	public void setPath(List<Node> path) {
-    	this.path = path;
-    	this.tick = 0;
-	}
+    public void setPath(List<Node> path) {
+        this.path = path;
+        this.tick = 0;
+    }
 
-	public boolean isRunning() {
+    public boolean isRunning() {
         return this.path != null && this.tick <= this.path.size();
     }
 
     public void tick(ClientPlayerEntity player, GameOptions options) {
-    	if(MinecraftClient.getInstance().options.keySocialInteractions.isPressed()) {
-    		this.tick = this.path.size();
-    	}
-    	if(this.tick == this.path.size()) {
-		    options.keyForward.setPressed(false);
-		    options.keyBack.setPressed(false);
-		    options.keyLeft.setPressed(false);
-		    options.keyRight.setPressed(false);
-		    options.keyJump.setPressed(false);
-		    options.keySneak.setPressed(false);
-		    options.keySprint.setPressed(false);
-	    } else {
-		    Node node = this.path.get(this.tick);
+        // Na 1.16.5, a tecla de interações sociais é keySocialInteractions
+        if(MinecraftClient.getInstance().options.keySocialInteractions.isPressed()) {
+            this.tick = this.path.size();
+        }
+        if(this.tick == this.path.size()) {
+            options.keyForward.setPressed(false);
+            options.keyBack.setPressed(false);
+            options.keyLeft.setPressed(false);
+            options.keyRight.setPressed(false);
+            options.keyJump.setPressed(false);
+            options.keySneak.setPressed(false);
+            options.keySprint.setPressed(false);
+        } else {
+            Node node = this.path.get(this.tick);
 
-		    if(this.tick != 0) {
-			    this.path.get(this.tick - 1).agent.compare(player, true);
-		    }
+            if(this.tick != 0) {
+                this.path.get(this.tick - 1).agent.compare(player, true);
+            }
 
-		    if(node.input != null) {
-			    // 1.16 fall flying logic check
+            if(node.input != null) {
                 if (player.isFallFlying()) {
-                    // Stop fall flying manually if needed or via mixin accessor
+                    // Logica de elytra se necessario
                 }
-			    options.keyForward.setPressed(node.input.forward);
-			    options.keyBack.setPressed(node.input.back);
-			    options.keyLeft.setPressed(node.input.left);
-			    options.keyRight.setPressed(node.input.right);
-			    options.keyJump.setPressed(node.input.jump);
-			    options.keySneak.setPressed(node.input.sneak);
-			    options.keySprint.setPressed(node.input.sprint);
-			    player.prevYaw = player.yaw;
-			    player.prevPitch = player.pitch;
-			    player.yaw = node.input.yaw;
-			    player.pitch = node.input.pitch;
-		    }
-	    }
+                options.keyForward.setPressed(node.input.forward);
+                options.keyBack.setPressed(node.input.back);
+                options.keyLeft.setPressed(node.input.left);
+                options.keyRight.setPressed(node.input.right);
+                options.keyJump.setPressed(node.input.jump);
+                options.keySneak.setPressed(node.input.sneak);
+                options.keySprint.setPressed(node.input.sprint);
+                player.prevYaw = player.yaw;
+                player.prevPitch = player.pitch;
+                player.yaw = node.input.yaw;
+                player.pitch = node.input.pitch;
+            }
+        }
 
-	    this.tick++;
+        this.tick++;
     }
+
 }
