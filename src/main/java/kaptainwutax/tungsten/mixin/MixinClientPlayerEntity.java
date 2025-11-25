@@ -8,8 +8,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.network.encryption.PlayerPublicKey;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,10 +17,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ClientPlayerEntity.class)
 public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
 
-	private Thread patfinderThread = null;
-
-	public MixinClientPlayerEntity(ClientWorld world, GameProfile profile, @Nullable PlayerPublicKey publicKey) {
-		super(world, profile, publicKey);
+    // 1.16.5 constructor does not have PlayerPublicKey
+	public MixinClientPlayerEntity(ClientWorld world, GameProfile profile) {
+		super(world, profile);
 	}
 
 	@Inject(method = "tick", at = @At("HEAD"))
@@ -31,22 +28,22 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 			TungstenMod.EXECUTOR.tick((ClientPlayerEntity)(Object)this, MinecraftClient.getInstance().options);
 		}
 
-		if(!this.getAbilities().flying) {
+		if(!this.abilities.flying) {
 			Agent.INSTANCE = Agent.of((ClientPlayerEntity)(Object)this);
 			Agent.INSTANCE.tick(this.world);
 		}
 
-		if(MinecraftClient.getInstance().options.swapHandsKey.isPressed() && !PathFinder.active) {
+		if(MinecraftClient.getInstance().options.keySwapHands.isPressed() && !PathFinder.active) {
 			PathFinder.find(this.world, TungstenMod.TARGET);
 		}
-		if (MinecraftClient.getInstance().options.socialInteractionsKey.isPressed() && PathFinder.thread != null && PathFinder.thread.isAlive()) {
+		if (MinecraftClient.getInstance().options.keySocialInteractions.isPressed() && PathFinder.thread != null && PathFinder.thread.isAlive()) {
 			PathFinder.thread.interrupt();
 		}
 	}
 
 	@Inject(method = "tick", at = @At(value = "RETURN"))
 	public void end(CallbackInfo ci) {
-		if(!this.getAbilities().flying && Agent.INSTANCE != null) {
+		if(!this.abilities.flying && Agent.INSTANCE != null) {
 			Agent.INSTANCE.compare((ClientPlayerEntity)(Object)this, false);
 		}
 	}
@@ -64,5 +61,4 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 			ci.setReturnValue(super.getYaw(tickDelta));
 		}
 	}
-
 }
