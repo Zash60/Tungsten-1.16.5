@@ -57,7 +57,7 @@ public class PathFinder {
 		Node start = new Node(null, Agent.of(player), null, 0);
 		start.combinedCost = computeHeuristic(start.agent.getPos(), start.agent.onGround, target);
 		
-		double[] bestHeuristicSoFar = new double[COEFFICIENTS.length];//keep track of the best node by the metric of (estimatedCostToGoal + cost / COEFFICIENTS[i])
+		double[] bestHeuristicSoFar = new double[COEFFICIENTS.length];
 		for (int i = 0; i < bestHeuristicSoFar.length; i++) {
             bestHeuristicSoFar[i] = start.heuristic;
             bestSoFar[i] = start;
@@ -71,8 +71,7 @@ public class PathFinder {
 			Node next = openSet.removeLowest();
 			if (shouldNodeBeSkiped(next, target, closed, true)) continue;
 
-			
-			if(MinecraftClient.getInstance().options.socialInteractionsKey.isPressed()) break;
+			if(MinecraftClient.getInstance().options.keySocialInteractions.isPressed()) break;
 			double minVel = 0.2;
 			if(next.agent.getPos().squaredDistanceTo(target) <= 0.4D && !failing /*|| !failing && (startTime + 5000) - System.currentTimeMillis() <= 0*/) {
 				TungstenMod.RENDERERS.clear();
@@ -92,7 +91,7 @@ public class PathFinder {
 					TungstenMod.EXECUTOR.setPath(path);
 					break;
 				}
-			} /* else if (previous != null && next.agent.getPos().squaredDistanceTo(target) > previous.agent.getPos().squaredDistanceTo(target)) continue; */
+			} 
 			if(TungstenMod.RENDERERS.size() > 9000) {
 				TungstenMod.RENDERERS.clear();
 			}
@@ -100,44 +99,19 @@ public class PathFinder {
 
 			 TungstenMod.RENDERERS.add(new Cuboid(next.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), Color.RED));
 			 
-//			 try {
-//                 Thread.sleep(600);
-//             } catch (InterruptedException ignored) {}
 			 
 			for(Node child : next.getChildren(world, target)) {
 				if (shouldNodeBeSkiped(child, target, closed)) continue;
-//				if(closed.contains(child.agent.getPos()))continue;
-				
-				// DUMB HEURISTIC CALC
-//				child.heuristic = child.pathCost / child.agent.getPos().distanceTo(start.agent.getPos()) * child.agent.getPos().distanceTo(target);
-
-				// NOT SO DUMB HEURISTIC CALC
-//				double heuristic = 20.0D * child.agent.getPos().distanceTo(target);
-//				
-//				if (child.agent.horizontalCollision) {
-//		            //massive collision punish
-//		            double d = 25+ (Math.abs(next.agent.velZ-child.agent.velY)+Math.abs(next.agent.velX-child.agent.velX))*120;
-//		            heuristic += d;
-//		        }
-//				
-//				child.heuristic = heuristic;
-				
-				// AStar? HEURISTIC CALC
-//				if (next.agent.getPos().distanceTo(child.agent.getPos()) < 0.2) continue;
 				updateNode(next, child, target);
 				
                 if (child.isOpen()) {
                     openSet.update(child);
                 } else {
-                    openSet.insert(child);//dont double count, dont insert into open set if it's already there
+                    openSet.insert(child);
                 }
                 
                 failing = updateBestSoFar(child, bestHeuristicSoFar, target);
 
-		        
-//				open.add(child);
-
-//				TungstenMod.RENDERERS.add(new Line(child.agent.getPos(), child.parent.agent.getPos(), child.color));
 				TungstenMod.RENDERERS.add(new Cuboid(child.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), child.color));
 			}
 		}
@@ -160,7 +134,6 @@ public class PathFinder {
 	private static double computeHeuristic(Vec3d position, boolean onGround, Vec3d target) {
 	    double dx = position.x - target.x;
 	    double dy = (position.y - target.y);
-//	    if (onGround || dy < 1.6 && dy > -1.6) dy = 0;
 	    
 	    double dz = position.z - target.z;
 	    return (Math.sqrt(dx * dx + dy * dy + dz * dz)) * 33.563;
@@ -170,7 +143,7 @@ public class PathFinder {
 	    Vec3d childPos = child.agent.getPos();
 
 	    double collisionScore = 0;
-	    double tentativeCost = current.cost + 1; // Assuming uniform cost for each step
+	    double tentativeCost = current.cost + 1;
 	    if (child.agent.horizontalCollision) {
 	        collisionScore += 25 + (Math.abs(current.agent.velZ - child.agent.velZ) + Math.abs(current.agent.velX - child.agent.velX)) * 120;
 	    }
