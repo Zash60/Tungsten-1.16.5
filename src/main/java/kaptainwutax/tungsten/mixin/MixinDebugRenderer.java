@@ -8,6 +8,7 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.render.debug.DebugRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
+import org.lwjgl.opengl.GL11;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,28 +21,28 @@ public class MixinDebugRenderer {
     @Inject(method = "render", at = @At("RETURN"))
     public void render(MatrixStack matrices, VertexConsumerProvider.Immediate vertexConsumers, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
         RenderSystem.disableDepthTest();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        // 1.16 doesn't use setShader here, just disable texture for colored lines
         RenderSystem.disableTexture();
         RenderSystem.disableBlend();
+        RenderSystem.lineWidth(2.0F);
 
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
 
-        RenderSystem.lineWidth(2.0F);
-        
-        buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+        // 1.16.5 format
+        buffer.begin(GL11.GL_LINE_STRIP, VertexFormats.POSITION_COLOR);
         Cuboid goal = new Cuboid(TungstenMod.TARGET.subtract(0.5D, 0D, 0.5D), new Vec3d(1.0D, 2.0D, 1.0D), Color.GREEN);
         goal.render();
         tessellator.draw();
 
         TungstenMod.RENDERERS.forEach(r -> {
-            buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+            buffer.begin(GL11.GL_LINE_STRIP, VertexFormats.POSITION_COLOR);
             r.render();
             tessellator.draw();
         });
         
         TungstenMod.TEST.forEach(r -> {
-            buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+            buffer.begin(GL11.GL_LINE_STRIP, VertexFormats.POSITION_COLOR);
             r.render();
             tessellator.draw();
         });
@@ -49,5 +50,4 @@ public class MixinDebugRenderer {
         RenderSystem.enableBlend();
         RenderSystem.enableTexture();
     }
-
 }
