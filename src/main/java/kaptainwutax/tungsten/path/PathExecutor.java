@@ -2,8 +2,7 @@ package kaptainwutax.tungsten.path;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-// Import removido para evitar erro de pacote options/option
-// import net.minecraft.client.options.GameOptions; 
+import net.minecraft.client.options.GameOptions;
 
 import java.util.List;
 
@@ -23,10 +22,9 @@ public class PathExecutor {
         return this.path != null && this.tick <= this.path.size();
     }
 
-    // Removido argumento GameOptions para evitar erro de import
     public void tick(ClientPlayerEntity player) {
-        // Pegamos as opcoes aqui dentro
-        var options = MinecraftClient.getInstance().options;
+        // CORREÇÃO: 'var' não existe no Java 8. Usamos o tipo explícito.
+        GameOptions options = MinecraftClient.getInstance().options;
 
         if(options.keySocialInteractions.isPressed()) {
             this.tick = this.path.size();
