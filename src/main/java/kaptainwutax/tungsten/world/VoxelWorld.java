@@ -22,7 +22,7 @@ import net.minecraft.world.dimension.DimensionType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class VoxelWorld implements WorldView {
@@ -71,11 +71,10 @@ public class VoxelWorld implements WorldView {
         chunk.setFluidState(x, y, z, fluid);
     }
 
+    // Correção: Assinatura correta para 1.16.5 (Stream e Predicate)
     @Override
-    public List<VoxelShape> getEntityCollisions(@Nullable Entity entity, Box box) {
-        // Na 1.16.5, retorna Stream. Convertemos para List.
-        // Passamos null como predicado.
-        return this.parent.getEntityCollisions(entity, box, null).collect(Collectors.toList());
+    public Stream<VoxelShape> getEntityCollisions(@Nullable Entity entity, Box box, Predicate<Entity> predicate) {
+        return this.parent.getEntityCollisions(entity, box, predicate);
     }
 
     @Nullable
