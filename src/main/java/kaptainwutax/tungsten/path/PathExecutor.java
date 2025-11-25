@@ -2,7 +2,8 @@ package kaptainwutax.tungsten.path;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.options.GameOptions; // Tentando manter plural, se falhar é singular
+// Import removido para evitar erro de pacote options/option
+// import net.minecraft.client.options.GameOptions; 
 
 import java.util.List;
 
@@ -22,8 +23,12 @@ public class PathExecutor {
         return this.path != null && this.tick <= this.path.size();
     }
 
-    public void tick(ClientPlayerEntity player, GameOptions options) {
-        if(MinecraftClient.getInstance().options.keySocialInteractions.isPressed()) {
+    // Removido argumento GameOptions para evitar erro de import
+    public void tick(ClientPlayerEntity player) {
+        // Pegamos as opcoes aqui dentro
+        var options = MinecraftClient.getInstance().options;
+
+        if(options.keySocialInteractions.isPressed()) {
             this.tick = this.path.size();
         }
         if(this.tick == this.path.size()) {
@@ -43,7 +48,7 @@ public class PathExecutor {
 
             if(node.input != null) {
                 if (player.isFallFlying()) {
-                    // Logic check
+                    // Logica de elytra
                 }
                 options.keyForward.setPressed(node.input.forward);
                 options.keyBack.setPressed(node.input.back);
