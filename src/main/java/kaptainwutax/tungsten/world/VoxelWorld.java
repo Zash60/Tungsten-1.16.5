@@ -22,6 +22,8 @@ import net.minecraft.world.dimension.DimensionType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VoxelWorld implements WorldView {
 
@@ -33,7 +35,6 @@ public class VoxelWorld implements WorldView {
         this.chunks.defaultReturnValue(VoxelChunk.EMPTY);
     }
 
-    // Metodos hardcoded para 1.16
     public int getBottomY() { return 0; }
     public int getHeight() { return 256; }
 
@@ -45,7 +46,7 @@ public class VoxelWorld implements WorldView {
     @Override
     public BlockState getBlockState(BlockPos pos) {
         int x = pos.getX();
-        int y = pos.getY(); 
+        int y = pos.getY();
         int z = pos.getZ();
         long id = 0L;
         return this.chunks.get(id).getBlockState(x, y, z);
@@ -72,8 +73,9 @@ public class VoxelWorld implements WorldView {
 
     @Override
     public List<VoxelShape> getEntityCollisions(@Nullable Entity entity, Box box) {
-        // 1.16.5: Requer predicado como terceiro argumento. Null aceita tudo.
-        return this.parent.getEntityCollisions(entity, box, null);
+        // Na 1.16.5, retorna Stream. Convertemos para List.
+        // Passamos null como predicado.
+        return this.parent.getEntityCollisions(entity, box, null).collect(Collectors.toList());
     }
 
     @Nullable
