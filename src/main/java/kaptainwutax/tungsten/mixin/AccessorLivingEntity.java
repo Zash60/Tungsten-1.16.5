@@ -13,4 +13,7 @@ public interface AccessorLivingEntity {
 	@Accessor
 	int getJumpingCooldown();
 
+    @Accessor
+    float getAirStrafingSpeed();
+
 }
