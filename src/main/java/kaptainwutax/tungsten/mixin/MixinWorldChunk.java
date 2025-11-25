@@ -3,7 +3,6 @@ package kaptainwutax.tungsten.mixin;
 import kaptainwutax.tungsten.TungstenMod;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.nbt.CompoundTag; // Na 1.16.5 yarn é CompoundTag
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -23,8 +22,9 @@ public abstract class MixinWorldChunk {
 	@Shadow public abstract BlockState getBlockState(BlockPos pos);
 	@Shadow public abstract FluidState getFluidState(BlockPos pos);
 
+    // Usamos net.minecraft.nbt.CompoundTag explicitamente
 	@Inject(method = "loadFromPacket", at = @At("RETURN"))
-	private void loadFromPacket(@Nullable BiomeArray biomes, PacketByteBuf buf, CompoundTag nbt, int verticalStripBitmask, CallbackInfo ci) {
+	private void loadFromPacket(@Nullable BiomeArray biomes, PacketByteBuf buf, net.minecraft.nbt.CompoundTag nbt, int verticalStripBitmask, CallbackInfo ci) {
 		if(TungstenMod.WORLD == null || this.getWorld() != TungstenMod.WORLD.parent) {
 			return;
 		}
