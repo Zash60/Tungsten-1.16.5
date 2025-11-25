@@ -11,7 +11,7 @@ public class AgentInput extends Input {
 	}
 	
 	@Override
-	public void tick(boolean slowDown, float sneakSpeed) {
+	public void tick(boolean slowDown) {
 		this.pressingForward = this.agent.keyForward;
 		this.pressingBack = this.agent.keyBack;
 		this.pressingLeft = this.agent.keyLeft;
@@ -22,8 +22,8 @@ public class AgentInput extends Input {
 		this.sneaking = this.agent.keySneak;
 
 		if(slowDown) {
-			this.movementSideways *= sneakSpeed;
-			this.movementForward *= sneakSpeed;
+			this.movementSideways *= 0.3F;
+			this.movementForward *= 0.3F;
 		}
 	}
 
