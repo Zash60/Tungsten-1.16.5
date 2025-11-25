@@ -17,7 +17,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ClientPlayerEntity.class)
 public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
 
-    // 1.16.5 constructor does not have PlayerPublicKey
 	public MixinClientPlayerEntity(ClientWorld world, GameProfile profile) {
 		super(world, profile);
 	}
@@ -25,7 +24,8 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 	@Inject(method = "tick", at = @At("HEAD"))
 	public void start(CallbackInfo ci) {
 		if(TungstenMod.EXECUTOR.isRunning()) {
-			TungstenMod.EXECUTOR.tick((ClientPlayerEntity)(Object)this, MinecraftClient.getInstance().options);
+            // Atualizado: nao passa mais 'options'
+			TungstenMod.EXECUTOR.tick((ClientPlayerEntity)(Object)this);
 		}
 
 		if(!this.abilities.flying) {
