@@ -6,13 +6,8 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeArray;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.UpgradeData;
 import net.minecraft.world.chunk.WorldChunk;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,24 +16,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.function.Consumer;
-
 @Mixin(WorldChunk.class)
-public abstract class MixinWorldChunk extends Chunk {
+public abstract class MixinWorldChunk {
 
-	public MixinWorldChunk(World world, ChunkPos pos, BiomeArray biomes, UpgradeData upgradeData, @Nullable long[] inhabitedTime, @Nullable ChunkSection[] sections, @Nullable Consumer<WorldChunk> consumer) {
-		super(pos, biomes, upgradeData, world, inhabitedTime, sections, consumer);
-	}
-
+    // Shadows sao necessarios para acessar metodos da classe alvo
 	@Shadow public abstract World getWorld();
 	@Shadow public abstract BlockState getBlockState(BlockPos pos);
 	@Shadow public abstract FluidState getFluidState(BlockPos pos);
 
+    // Assinatura corrigida para 1.16.5
 	@Inject(method = "loadFromPacket", at = @At("RETURN"))
 	private void loadFromPacket(@Nullable BiomeArray biomes, PacketByteBuf buf, CompoundTag nbt, int verticalStripBitmask, CallbackInfo ci) {
 		if(TungstenMod.WORLD == null || this.getWorld() != TungstenMod.WORLD.parent) {
 			return;
 		}
+        // Logica comentada
 	}
 
 }
