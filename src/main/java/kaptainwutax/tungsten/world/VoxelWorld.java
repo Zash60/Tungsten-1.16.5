@@ -9,7 +9,6 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.WorldView;
@@ -34,6 +33,16 @@ public class VoxelWorld implements WorldView {
         this.chunks.defaultReturnValue(VoxelChunk.EMPTY);
     }
 
+    // 1.16.5 does not support getBottomY or HeightLimitView directly in interface
+    // So we hardcode standard overworld/nether behavior for old versions
+    public int getBottomY() {
+        return 0;
+    }
+
+    public int getHeight() {
+        return 256;
+    }
+
     @Override
     public boolean isChunkLoaded(int chunkX, int chunkZ) {
         return true;
@@ -42,7 +51,7 @@ public class VoxelWorld implements WorldView {
     @Override
     public BlockState getBlockState(BlockPos pos) {
         int x = pos.getX();
-        int y = pos.getY() - this.getBottomY();
+        int y = pos.getY(); // 1.16 starts at 0
         int z = pos.getZ();
         long id = 0L;
         return this.chunks.get(id).getBlockState(x, y, z);
@@ -51,7 +60,7 @@ public class VoxelWorld implements WorldView {
     @Override
     public FluidState getFluidState(BlockPos pos) {
         int x = pos.getX();
-        int y = pos.getY() - this.getBottomY();
+        int y = pos.getY();
         int z = pos.getZ();
         long id = 0L;
         return this.chunks.get(id).getFluidState(x, y, z);
@@ -59,7 +68,7 @@ public class VoxelWorld implements WorldView {
 
     public void setBlockAndFluidState(BlockPos pos, BlockState block, FluidState fluid) {
         int x = pos.getX();
-        int y = pos.getY() - this.getBottomY();
+        int y = pos.getY();
         int z = pos.getZ();
         long id = 0L;
         VoxelChunk chunk = this.chunks.computeIfAbsent(id, i -> new VoxelChunk());
@@ -71,8 +80,6 @@ public class VoxelWorld implements WorldView {
     public List<VoxelShape> getEntityCollisions(@Nullable Entity entity, Box box) {
         return this.parent.getEntityCollisions(entity, box);
     }
-
-    //========================================================================================================//
 
     @Nullable
     @Override
@@ -95,8 +102,9 @@ public class VoxelWorld implements WorldView {
         return this.parent.getBiomeAccess();
     }
 
+    // 1.16 does not use RegistryEntry for biomes here
     @Override
-    public RegistryEntry<Biome> getGeneratorStoredBiome(int biomeX, int biomeY, int biomeZ) {
+    public Biome getGeneratorStoredBiome(int biomeX, int biomeY, int biomeZ) {
         return this.parent.getGeneratorStoredBiome(biomeX, biomeY, biomeZ);
     }
 
@@ -135,5 +143,4 @@ public class VoxelWorld implements WorldView {
     public BlockEntity getBlockEntity(BlockPos pos) {
         return this.parent.getBlockEntity(pos);
     }
-
 }
