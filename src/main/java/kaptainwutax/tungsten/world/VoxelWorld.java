@@ -21,7 +21,6 @@ import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.dimension.DimensionType;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -71,7 +70,8 @@ public class VoxelWorld implements WorldView {
         chunk.setFluidState(x, y, z, fluid);
     }
 
-    // Correção: Assinatura correta para 1.16.5 (Stream e Predicate)
+    // CORREÇÃO: Retornar Stream diretamente, sem converter para List,
+    // pois a interface WorldView/CollisionView na 1.16.5 exige Stream<VoxelShape>.
     @Override
     public Stream<VoxelShape> getEntityCollisions(@Nullable Entity entity, Box box, Predicate<Entity> predicate) {
         return this.parent.getEntityCollisions(entity, box, predicate);
