@@ -1,13 +1,9 @@
 package kaptainwutax.tungsten.mixin;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.fluid.Fluid;
-import net.minecraft.tag.Tag;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
-
-import java.util.Set;
 
 @Mixin(Entity.class)
 public interface AccessorEntity {
@@ -18,10 +14,6 @@ public interface AccessorEntity {
 	@Accessor
 	boolean getFirstUpdate();
 
-	@Accessor("submergedFluidTag")
-	Set<Tag<Fluid>> getSubmergedFluidTag();
-
-    @Accessor("collidedSoftly")
-    boolean getCollidedSoftly();
+    // 'submergedFluidTag' e 'collidedSoftly' não existem na 1.16.5 e foram removidos
 
 }
