@@ -2,7 +2,8 @@ package kaptainwutax.tungsten.path;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.options.GameOptions;
+// Import removido para evitar erro de pacote
+// import net.minecraft.client.options.GameOptions; 
 
 import java.util.List;
 
@@ -23,20 +24,20 @@ public class PathExecutor {
     }
 
     public void tick(ClientPlayerEntity player) {
-        // CORREÇÃO: 'var' não existe no Java 8. Usamos o tipo explícito.
-        GameOptions options = MinecraftClient.getInstance().options;
-
-        if(options.keySocialInteractions.isPressed()) {
+        // Acessa as opcoes diretamente sem declarar a variavel 'GameOptions'
+        // para evitar problemas de importacao (singular vs plural em versoes diferentes)
+        if(MinecraftClient.getInstance().options.keySocialInteractions.isPressed()) {
             this.tick = this.path.size();
         }
+        
         if(this.tick == this.path.size()) {
-            options.keyForward.setPressed(false);
-            options.keyBack.setPressed(false);
-            options.keyLeft.setPressed(false);
-            options.keyRight.setPressed(false);
-            options.keyJump.setPressed(false);
-            options.keySneak.setPressed(false);
-            options.keySprint.setPressed(false);
+            MinecraftClient.getInstance().options.keyForward.setPressed(false);
+            MinecraftClient.getInstance().options.keyBack.setPressed(false);
+            MinecraftClient.getInstance().options.keyLeft.setPressed(false);
+            MinecraftClient.getInstance().options.keyRight.setPressed(false);
+            MinecraftClient.getInstance().options.keyJump.setPressed(false);
+            MinecraftClient.getInstance().options.keySneak.setPressed(false);
+            MinecraftClient.getInstance().options.keySprint.setPressed(false);
         } else {
             Node node = this.path.get(this.tick);
 
@@ -48,13 +49,14 @@ public class PathExecutor {
                 if (player.isFallFlying()) {
                     // Logica de elytra
                 }
-                options.keyForward.setPressed(node.input.forward);
-                options.keyBack.setPressed(node.input.back);
-                options.keyLeft.setPressed(node.input.left);
-                options.keyRight.setPressed(node.input.right);
-                options.keyJump.setPressed(node.input.jump);
-                options.keySneak.setPressed(node.input.sneak);
-                options.keySprint.setPressed(node.input.sprint);
+                MinecraftClient.getInstance().options.keyForward.setPressed(node.input.forward);
+                MinecraftClient.getInstance().options.keyBack.setPressed(node.input.back);
+                MinecraftClient.getInstance().options.keyLeft.setPressed(node.input.left);
+                MinecraftClient.getInstance().options.keyRight.setPressed(node.input.right);
+                MinecraftClient.getInstance().options.keyJump.setPressed(node.input.jump);
+                MinecraftClient.getInstance().options.keySneak.setPressed(node.input.sneak);
+                MinecraftClient.getInstance().options.keySprint.setPressed(node.input.sprint);
+                
                 player.prevYaw = player.yaw;
                 player.prevPitch = player.pitch;
                 player.yaw = node.input.yaw;
