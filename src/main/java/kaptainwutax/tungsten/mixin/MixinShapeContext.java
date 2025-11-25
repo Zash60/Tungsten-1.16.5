@@ -8,10 +8,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ShapeContext.class)
-public abstract class MixinShapeContext { // Mudado de 'interface' para 'abstract class'
+public interface MixinShapeContext {
 
+    // Java 8 em interfaces não suporta 'private static'. 
+    // Removemos o 'private'. O Mixin ainda funcionará corretamente.
 	@Inject(method = "of", at = @At("HEAD"), cancellable = true)
-	private static void of(Entity entity, CallbackInfoReturnable<ShapeContext> ci) {
+	static void of(Entity entity, CallbackInfoReturnable<ShapeContext> ci) {
 		if(entity == null) {
 			ci.setReturnValue(null);
 		}
